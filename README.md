@@ -1,88 +1,83 @@
-위키독스 옵시디언 플러그인을 사용하면 옵시디언에서 위키독스 책을 편집할 수 있습니다.  
+# WikiDocs Obsidian Plugin
 
-* 옵시디언 바로가기 : [https://obsidian.md/](https://obsidian.md/)  
+With the WikiDocs Obsidian Plugin, you can edit WikiDocs books directly within Obsidian.  
 
-
-[TOC]  
-
-## 플러그인 설치하기  
-
-현재 플러그인을 준비 중에 있습니다.  
-잠시만 기다려 주세요.  
+* Shortcut to Obsidian: [https://obsidian.md/](https://obsidian.md/)  
 
 
-## 플러그인 사용을 위한 준비  
+## Installing the Plugin  
 
-옵시디언에 위키독스 플러그인을 설치했다면 다음과 같이 따라하세요.  
+The plugin is currently under preparation.  
+Please wait a little longer.  
 
-### 위키독스 API 토큰 발급받기  
 
-플러그인 사용을 위해서는 위키독스 API 토큰이 필요합니다. 이 API 토큰은 사용자 인증을 위해 필요한 토큰입니다. API 토큰은 다음 메뉴에서 발급받을 수 있습니다.  
+## Preparing to Use the Plugin  
 
-[로그인 > 계정설정 > API 토큰 생성하기]  
+Once the WikiDocs plugin is installed in Obsidian, follow these steps:  
+
+### Obtaining a WikiDocs API Token  
+
+An API token is required to use the plugin. This token is necessary for user authentication. You can generate an API token from the following menu:  
+
+[Login > Account Settings > Generate API Token]  
 ![](https://wikidocs.net/images/page/267526/iShot_2024-11-28_15.42.32.png)  
 
-이 곳에 표시된 현재 토큰 값을 복사해 주세요.  
+Copy the displayed token value.  
 
-### 옵시디언 플러그인 설정하기  
+### Configuring the Obsidian Plugin  
 
-플러그인을 설치하면 옵시디언 설정 화면 좌측 하단에 [커뮤니티 플러그인 > WikiDocs Plugin] 이라는 항목이 보입니다.  
+After installing the plugin, you will see an option called [Community Plugins > WikiDocs Plugin] in the lower-left settings pane of Obsidian.  
 
 ![](https://wikidocs.net/images/page/267526/iShot_2024-11-28_15.49.11.png)  
 
-이 항목을 클릭하여 다음과 같이 등록하세요.  
+Click on this item and configure the settings as follows:  
 
-- API Base URL : `https://wikidocs.net/napi`  
-- API Token : 위에서 복사한 토큰값을 붙여넣기 합니다.  
+- API Base URL: `https://wikidocs.net/napi`  
+- API Token: Paste the token value you copied earlier.  
 
 
-## 위키독스 책 조회하기  
+## Viewing WikiDocs Books  
 
-플러그인을 설치하면 옵시디언 화면의 좌측 아이콘 중 가장 하단에 "책 모양" 아이콘이 생깁니다.  
+After installing the plugin, a "book icon" will appear at the bottom of the icons on the left side of the Obsidian screen.  
 
 ![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241128155407.png)  
 
-이 아이콘을 클릭하면 다음과 같은 팝업 창이 나타납니다.  
+Click this icon to open a popup window as shown below:  
 
 ![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241128155553.png)  
 
-본인이 작성 중인 위키독스 책들이 나타날 것입니다. 이 중에서 편집하고 싶은 책을 선택해 주세요. 그러면 책이 다운로드되어 옵시디언으로 들어옵니다.  
+The books you are currently working on in WikiDocs will be displayed. Select the book you wish to edit. The book will then be downloaded and opened in Obsidian.  
 
-## 위키독스 보내기  
+## Sending to WikiDocs  
 
-책을 편집한 후 "위키독스 보내기" 기능을 사용하면 위키독스에 변경된 내용을 업데이트할 수 있습니다. 옵시디언 목차의 "책 제목"에서 우측 마우스를 클릭하면 "위키독스 보내기" 메뉴가 보입니다.  책 제목이 아닌 일반 페이지 제목에서는 이 메뉴가 보이지 않으니 주의해 주세요.  
+After editing the book, use the "Send to WikiDocs" feature to update the changes to WikiDocs. Right-click on the "book title" in the Obsidian table of contents to see the "Send to WikiDocs" menu. Note that this menu does not appear when right-clicking on regular page titles.  
 
 ![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241128160546.png)  
 
-"위키독스 보내기"를 선택하면 변경된 내용이 위키독스에 반영됩니다.  
+Selecting "Send to WikiDocs" will apply the changes to WikiDocs.  
 
-## 위키독스 내려받기  
+## Downloading from WikiDocs  
 
-"위키독스 내려받기"는 위키독스의 책을 기준으로 옵시디언도 동일하게 일치시키는 명령어 입니다. 이 때 옵시디언에서 편집한 내용을 "위키독스 보내기" 기능으로 전송하지 않은 경우, 수정한 내용이 사라지므로 주의해 주세요. (이 명령은 위키독스를 기준으로 위키독스와 옵시디언의 내용을 완전히 일치시키는 작업입니다.)  
+"Download from WikiDocs" synchronizes Obsidian to match the WikiDocs book exactly. If you haven't sent your edits to WikiDocs using the "Send to WikiDocs" feature, the edited content may be lost, so proceed with caution. (This command ensures that the content in both WikiDocs and Obsidian is fully synchronized based on WikiDocs.)  
 
 ![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241128160749.png)  
 
 
+## Limitations  
 
-## 제한 사항  
+Here are some features that are available in WikiDocs but not in Obsidian:  
 
-위키독스에서는 되지만 옵시디언에서는 안되는 기능을 알려드립니다.  
+### Page Deletion Is Not Supported  
 
-### 페이지 삭제가 불가능 합니다.  
+Deleting a page can inadvertently remove its subpages as well. To prevent accidental deletions and irreversible data loss, page deletions made in Obsidian will not be reflected in WikiDocs. Pages can only be deleted directly in WikiDocs.  
 
-페이지 삭제는 하위 페이지까지 모두 삭제되는 위험한 기능입니다. 페이지를 잘못 삭제했을 경우 복구가 불가능하므로 옵시디언에서 삭제한 페이지는 위키독스에 반영되지 않도록 했습니다. 페이지 삭제는 위키독스에서만 가능합니다.  
+### Parent Page Assignment Is Limited  
 
-### 부모 페이지 설정이 제한적입니다.  
+WikiDocs organizes the table of contents by assigning parent pages. In Obsidian, pages with existing subpages can be moved, but pages without subpages cannot be moved under another page as a subpage.  
 
-위키독스의 페이지는 상위 페이지를 설정하여 목차를 구성합니다. 옵시디언의 경우 이미 하위 페이지가 있는 페이지로 페이지 이동은 가능하지만, 하위 페이지가 없는 페이지의 경우 해당 페이지의 하위로 페이지를 이동할 수 없습니다.  
+* Advanced features will enable this functionality in the future (details will be announced later).  
 
-* 고급 기능을 사용하면 가능합니다. (이 부분은 차후 공지하겠습니다.)  
+### Book Settings Cannot Be Modified  
 
-### 책에 대한 설정이 불가능합니다.  
+WikiDocs allows various book settings (e.g., book image, copyright, public/private status, advertisements), but in Obsidian, only the book's content can be edited.  
 
-위키독스는 책에 대한 여러 설정(책 이미지, 저작권, 공개 여부, 광고 등)을 할 수 있지만 옵시디언에서는 책의 내용만 수정 가능합니다.  
-
-
-## TODO  
-
-* 공개 / 비공개 표시
