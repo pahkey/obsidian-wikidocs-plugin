@@ -1,4 +1,4 @@
-import { TAbstractFile, TFile, TFolder } from "obsidian";
+import { Modal, TAbstractFile, TFile, TFolder } from "obsidian";
 
 
 export function sanitizeFileName(fileName: string): string {
@@ -137,4 +137,39 @@ export function extractEmbeddedImages(content: string): TFile[] {
     }
 
     return imageFiles;
+}
+
+
+export async function showConfirmationDialog(message: string): Promise<boolean> {
+    return new Promise((resolve) => {
+        const modal = new Modal(this.app);
+
+        // Modal UI 구성
+        modal.contentEl.createEl("h2", { text: "확인 필요" });
+
+        // 줄바꿈 처리
+        const lines = message.split("\n");
+        lines.forEach((line) => {
+            modal.contentEl.createEl("p", { text: line });
+        });
+
+        // 확인 버튼
+        const confirmButton = modal.contentEl.createEl("button", { text: "확인" });
+        confirmButton.addEventListener("click", () => {
+            modal.close();
+            resolve(true); // 사용자가 확인을 선택
+        });
+
+        // 취소 버튼
+        const cancelButton = modal.contentEl.createEl("button", { text: "취소" });
+        cancelButton.addEventListener("click", () => {
+            modal.close();
+            resolve(false); // 사용자가 취소를 선택
+        });
+
+        // 스타일 추가
+        confirmButton.style.marginRight = "10px";
+
+        modal.open();
+    });
 }

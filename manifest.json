@@ -1,11 +1,11 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "wikidocs-plugin",
+	"name": "WikiDocs Plugin",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "위키독스 옵시디언 플러그인",
+	"author": "pahkey",
+	"authorUrl": "https://wikidocs.net",
+	"fundingUrl": "https://wikidocs.net",
 	"isDesktopOnly": false
 }

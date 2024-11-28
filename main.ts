@@ -2,13 +2,13 @@ import { App, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile, TFolder }
 
 import {
 	deleteFolderContents,
-	ensureFolderExists,
 	ensureLineBreaks,
 	extractEmbeddedImages,
 	extractTitleFromFilePath,
 	getFileModifiedTime,
 	removeFrontMatter,
 	sanitizeFileName,
+	showConfirmationDialog
 } from "./utils";
 
 import {
@@ -24,8 +24,7 @@ import {
 	addFrontMatterToFile,
 	extractMetadataFromFrontMatter,
 	getBookIdFromMetadata,
-	saveBookMetadata,
-	savePagesToMarkdown,
+	savePagesToMarkdown
 } from "./md";
 
 export default class MyPlugin extends Plugin {
@@ -37,6 +36,15 @@ export default class MyPlugin extends Plugin {
 		await this.loadSettings();
 		this.apiClient = new ApiClient(this.settings);
 
+		// 툴바에 아이콘 추가
+        this.addRibbonIcon("book", "위키독스 책 목록 가져오기", async (evt: MouseEvent) => {
+            // 책 목록 가져오기 명령 실행
+            const bookId = await this.promptForBookSelection();
+            if (bookId) {
+				this.apiClient.downloadBook(bookId);
+            }
+        });
+
 		// 책 리스트에서 선택하여 가져오기
 		this.addCommand({
 			id: "fetch-selected-book",
@@ -44,45 +52,36 @@ export default class MyPlugin extends Plugin {
 			callback: async () => {
 				const bookId = await this.promptForBookSelection();
 				if (bookId) {
-					// 책 정보를 가져와 제목을 최상위 폴더로 설정
-					const response = await this.apiClient.fetchWithAuth(`/books/${bookId}/`);
-					if (!response.ok) {
-						new Notice("Failed to fetch the selected book.");
-						return;
-					}
-		
-					const bookData = await response.json();
-					const folderPath = sanitizeFileName(bookData.subject); // 책 제목을 폴더로 사용
-		
-					await ensureFolderExists(folderPath);
-
-					// 책 ID와 제목을 metadata.md 파일에 저장
-					await saveBookMetadata(folderPath, bookId, bookData.subject);
-
-					await savePagesToMarkdown(bookData.pages, folderPath);
-		
-					new Notice(`Book "${bookData.subject}" fetched successfully!`);
+					this.apiClient.downloadBook(bookId);
 				}
 			},
 		});
 		
-
 		// 컨텍스트 메뉴에 항목 추가
 		this.registerEvent(
 			this.app.workspace.on("file-menu", (menu, file) => {
 				if (file instanceof TFolder) {
 					// 위키독스로부터 내려받기
 					menu.addItem((item) => {
-						item.setTitle("위키독스로부터 내려받기")
+						item.setTitle("위키독스 내려받기")
 							.setIcon("cloud-download")
 							.onClick(async () => {
-								await this.syncFromServer(file);
+								const confirmed = await showConfirmationDialog(
+									"[주의] 이 책이 위키독스 기준으로 업데이트됩니다.\n" +
+									"'위키독스 보내기'로 수정한 데이터를 전송했는지 확인해 주세요.\n" +
+									"정말로 내려받으시겠습니까?"
+								);
+								if (confirmed) {
+									await this.syncFromServer(file);
+								} else {
+									new Notice("동작이 취소되었습니다.");
+								}
 							});
 					});
 		
 					// 위키독스로 보내기
 					menu.addItem((item) => {
-						item.setTitle("위키독스로 보내기")
+						item.setTitle("위키독스 보내기")
 							.setIcon("cloud-upload")
 							.onClick(async () => {
 								await this.syncToServer(file);
@@ -148,7 +147,7 @@ export default class MyPlugin extends Plugin {
 			// Step 3: 책 데이터를 새로 저장
 			await savePagesToMarkdown(bookData.pages, folder.path);
 	
-			new Notice(`Book "${bookData.subject}" synced successfully!`);
+			new Notice(`"${bookData.subject}" 책을 성공적으로 가져왔습니다.`);
 		} catch (error) {
 			console.error(`Failed to sync folder "${folderName}"`, error);
 			new Notice(`Failed to sync folder "${folderName}".`);
@@ -256,23 +255,63 @@ export default class MyPlugin extends Plugin {
 	
 			modal.onClose = () => resolve(null);
 	
-			modal.contentEl.createEl("h2", { text: "Select a Book" });
+			// 헤더 스타일링
+			const header = modal.contentEl.createEl("h2", {
+				text: "위키독스 책을 선택해 주세요.",
+			});
+			header.style.textAlign = "center";
+			header.style.marginBottom = "20px";
+			header.style.color = "#333";
+	
+			// 리스트 스타일링
 			const list = modal.contentEl.createEl("ul");
+			list.style.listStyleType = "none";
+			list.style.padding = "0";
+			list.style.margin = "0";
+			list.style.maxHeight = "300px";
+			list.style.overflowY = "auto";
+			list.style.border = "1px solid #ddd";
+			list.style.borderRadius = "5px";
+			list.style.boxShadow = "0 2px 5px rgba(0,0,0,0.1)";
+			list.style.backgroundColor = "#f9f9f9";
 	
 			books.forEach((book: { id: number; subject: string }) => {
 				const listItem = list.createEl("li", {
 					text: book.subject,
 				});
+				listItem.style.padding = "10px 15px";
+				listItem.style.borderBottom = "1px solid #eee";
+				listItem.style.cursor = "pointer";
+				listItem.style.transition = "background-color 0.2s ease";
 	
-				listItem.onclick = () => {
+				listItem.addEventListener("mouseenter", () => {
+					listItem.style.backgroundColor = "#f0f0f0";
+				});
+	
+				listItem.addEventListener("mouseleave", () => {
+					listItem.style.backgroundColor = "";
+				});
+	
+				listItem.addEventListener("click", () => {
 					resolve(book.id);
 					modal.close();
-				};
+				});
 			});
+	
+			// 빈 목록 처리
+			if (books.length === 0) {
+				const emptyMessage = list.createEl("li", {
+					text: "책 목록이 비어 있습니다.",
+				});
+				emptyMessage.style.padding = "10px 15px";
+				emptyMessage.style.textAlign = "center";
+				emptyMessage.style.color = "#999";
+			}
 	
 			modal.open();
 		});
 	}
+	
 
 	// 설정 저장
 	async loadSettings() {
@@ -301,27 +340,35 @@ class MyPluginSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("API Base URL")
 			.setDesc("API의 기본 URL을 설정합니다.")
-			.addText((text) =>
+			.addText((text) => {
 				text
-					.setPlaceholder("http://127.0.0.1:8000/napi")
+					.setPlaceholder("https://wikidocs.net/napi")
 					.setValue(this.plugin.settings.apiBaseUrl)
 					.onChange(async (value) => {
 						this.plugin.settings.apiBaseUrl = value;
 						await this.plugin.saveSettings();
-					})
-			);
+					});
+	
+				// 스타일 적용
+				text.inputEl.style.width = "100%"; // 너비 100%
+				text.inputEl.style.minWidth = "300px"; // 최소 너비
+			});
 
 		new Setting(containerEl)
 			.setName("API Token")
 			.setDesc("API 인증 토큰을 입력합니다.")
-			.addText((text) =>
+			.addText((text) => {
 				text
-					.setPlaceholder("토큰 입력")
+					.setPlaceholder("위키독스에서 발급한 토큰을 입력해 주세요.")
 					.setValue(this.plugin.settings.apiToken)
 					.onChange(async (value) => {
 						this.plugin.settings.apiToken = value;
 						await this.plugin.saveSettings();
-					})
-			);
+					});
+	
+				// 스타일 적용
+				text.inputEl.style.width = "100%"; // 너비 100%
+				text.inputEl.style.minWidth = "300px"; // 최소 너비
+			});
 	}
 }

@@ -1,4 +1,6 @@
-import { App, TFile } from "obsidian";
+import { saveBookMetadata, savePagesToMarkdown } from "md";
+import { App, Notice, TFile } from "obsidian";
+import { ensureFolderExists, sanitizeFileName } from "utils";
 import { MyPluginSettings } from "./config";
 
 export class ApiClient {
@@ -86,5 +88,22 @@ export class ApiClient {
 		}
 	
 		return imageMap;
+	}
+
+	async downloadBook(bookId: number) {
+		const response = await this.fetchWithAuth(`/books/${bookId}/`);
+		if (!response.ok) {
+			new Notice("Failed to fetch the selected book.");
+			return;
+		}
+
+		const bookData = await response.json();
+		const folderPath = sanitizeFileName(bookData.subject);
+
+		await ensureFolderExists(folderPath);
+		await saveBookMetadata(folderPath, bookId, bookData.subject);
+		await savePagesToMarkdown(bookData.pages, folderPath);
+
+		new Notice(`Book "${bookData.subject}" fetched successfully!`);
 	}
 }

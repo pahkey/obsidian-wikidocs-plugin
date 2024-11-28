@@ -4,6 +4,6 @@ export interface MyPluginSettings {
 }
 
 export const DEFAULT_SETTINGS: MyPluginSettings = {
-	apiBaseUrl: "http://127.0.0.1:8000/napi",
+	apiBaseUrl: "https://wikidocs.net/napi",
 	apiToken: "",
 };
