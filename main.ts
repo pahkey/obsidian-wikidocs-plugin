@@ -41,7 +41,7 @@ export default class MyPlugin extends Plugin {
             // 책 목록 가져오기 명령 실행
             const bookId = await this.promptForBookSelection();
             if (bookId) {
-				this.apiClient.downloadBook(bookId);
+				this.apiClient.downloadBook(this.app, bookId);
             }
         });
 
@@ -52,7 +52,7 @@ export default class MyPlugin extends Plugin {
 			callback: async () => {
 				const bookId = await this.promptForBookSelection();
 				if (bookId) {
-					this.apiClient.downloadBook(bookId);
+					this.apiClient.downloadBook(this.app, bookId);
 				}
 			},
 		});
@@ -61,32 +61,36 @@ export default class MyPlugin extends Plugin {
 		this.registerEvent(
 			this.app.workspace.on("file-menu", (menu, file) => {
 				if (file instanceof TFolder) {
-					// 위키독스로부터 내려받기
-					menu.addItem((item) => {
-						item.setTitle("위키독스 내려받기")
-							.setIcon("cloud-download")
-							.onClick(async () => {
-								const confirmed = await showConfirmationDialog(
-									"[주의] 이 책이 위키독스 기준으로 업데이트됩니다.\n" +
-									"'위키독스 보내기'로 수정한 데이터를 전송했는지 확인해 주세요.\n" +
-									"정말로 내려받으시겠습니까?"
-								);
-								if (confirmed) {
-									await this.syncFromServer(file);
-								} else {
-									new Notice("동작이 취소되었습니다.");
-								}
-							});
-					});
-		
-					// 위키독스로 보내기
-					menu.addItem((item) => {
-						item.setTitle("위키독스 보내기")
-							.setIcon("cloud-upload")
-							.onClick(async () => {
-								await this.syncToServer(file);
-							});
-					});
+					const metadataFilePath = `${file.path}/metadata.md`;
+            		const metadataFile = this.app.vault.getAbstractFileByPath(metadataFilePath);
+					if (metadataFile instanceof TFile) {
+						// 위키독스로부터 내려받기
+						menu.addItem((item) => {
+							item.setTitle("위키독스 내려받기")
+								.setIcon("cloud-download")
+								.onClick(async () => {
+									const confirmed = await showConfirmationDialog(
+										"[주의] 이 책이 위키독스 기준으로 업데이트됩니다.\n" +
+										"'위키독스 보내기'로 수정한 데이터를 전송했는지 확인해 주세요.\n" +
+										"정말로 내려받으시겠습니까?"
+									);
+									if (confirmed) {
+										await this.syncFromServer(file);
+									} else {
+										// new Notice("동작이 취소되었습니다.");
+									}
+								});
+						});
+			
+						// 위키독스로 보내기
+						menu.addItem((item) => {
+							item.setTitle("위키독스 보내기")
+								.setIcon("cloud-upload")
+								.onClick(async () => {
+									await this.syncToServer(file);
+								});
+						});
+					}
 				}
 			})
 		);
@@ -132,25 +136,26 @@ export default class MyPlugin extends Plugin {
 			// Step 2: 서버에서 책 데이터 가져오기
 			const bookId = await getBookIdFromMetadata(folder.path);
 			if (!bookId) {
-				new Notice(`No book ID found in metadata for folder "${folderName}".`);
+				new Notice(`책의 메타데이터가 존재하지 않습니다.`);
 				return;
 			}
 	
 			const bookResponse = await this.apiClient.fetchWithAuth(`/books/${bookId}/`);
 			if (!bookResponse.ok) {
-				new Notice("Failed to fetch the selected book from server.");
+				new Notice("책 내려받기가 실패했습니다.");
 				return;
 			}
 	
 			const bookData = await bookResponse.json();
 	
 			// Step 3: 책 데이터를 새로 저장
-			await savePagesToMarkdown(bookData.pages, folder.path);
+			await savePagesToMarkdown(this.app, bookData.pages, folder.path);
+			this.app.workspace.trigger("iconize:refresh");
 	
-			new Notice(`"${bookData.subject}" 책을 성공적으로 가져왔습니다.`);
+			new Notice(`"${bookData.subject}" 책을 성공적으로 내려받았습니다.`);
 		} catch (error) {
 			console.error(`Failed to sync folder "${folderName}"`, error);
-			new Notice(`Failed to sync folder "${folderName}".`);
+			new Notice(`책 내려받기가 실패했습니다.`);
 		}
 	}	
 	
@@ -215,6 +220,7 @@ export default class MyPlugin extends Plugin {
 						subject: extractTitleFromFilePath(file.path),
 						book_id: metadata.book_id,
 						parent_id: metadata.parent_id,
+						open_yn: metadata.open_yn,
 					});
 
 					// const updatedFrontMatter = updateLastSyncedFrontMatter(fileContent);
@@ -226,6 +232,7 @@ export default class MyPlugin extends Plugin {
 							subject: extractTitleFromFilePath(file.path),
 							book_id: metadata.book_id,
 							parent_id: metadata.parent_id,
+							open_yn: metadata.open_yn,
 						});
 					}
 				}
@@ -238,14 +245,14 @@ export default class MyPlugin extends Plugin {
 			await this.syncFromServer(folder);
 		}
 	
-		new Notice(`Folder "${folderName}" synced to server successfully!`);
+		new Notice(`책을 성공적으로 내보냈습니다!`);
 	}
 	
 
 	async promptForBookSelection(): Promise<number | null> {
 		const response = await this.apiClient.fetchWithAuth(`/books/`);
 		if (!response.ok) {
-			new Notice("Failed to fetch book list.");
+			new Notice("책 목록을 가져오지 못했습니다.");
 			return null;
 		}
 		const books = await response.json();

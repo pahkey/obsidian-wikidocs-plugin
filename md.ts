@@ -1,4 +1,4 @@
-import { TFile, TFolder } from "obsidian";
+import { App, TFile, TFolder } from "obsidian";
 
 import {
     ensureFolderExists,
@@ -176,7 +176,7 @@ export async function updatePagesInFolder(pages: any[], folderPath: string) {
 }
 
 export async function extractMetadataFromFrontMatter(file: TFile): 
-        Promise<{ id: number; subject: string; last_synced?: string; book_id?: number; parent_id?: number;}> {
+        Promise<{ id: number; subject: string; last_synced?: string; book_id?: number; parent_id?: number; open_yn?: string;}> {
     const content = await this.app.vault.read(file);
     const frontMatterMatch = content.match(/---([\s\S]*?)---/);
 
@@ -207,6 +207,7 @@ export async function extractMetadataFromFrontMatter(file: TFile):
                 last_synced: metadata.last_synced as string,
                 book_id: metadata.book_id as number,
                 parent_id: metadata.parent_id as number,
+                open_yn: metadata.open_yn as string,
             };
         } else {
             throw new Error("Front Matter must contain 'id' and 'subject'.");
@@ -216,8 +217,7 @@ export async function extractMetadataFromFrontMatter(file: TFile):
     }
 }
 
-
-export async function savePagesToMarkdown(pages: any[], folderPath: string) {
+export async function savePagesToMarkdown(app:App, pages: any[], folderPath: string) {
     for (const page of pages) {
         const sanitizedFileName = sanitizeFileName(page.subject);
         const filePath = `${folderPath}/${sanitizedFileName}.md`;
@@ -229,9 +229,11 @@ export async function savePagesToMarkdown(pages: any[], folderPath: string) {
                 `id: ${page.id}\n` +
                 `subject: ${page.subject}\n` +
                 `parent_id: ${page.parent_id ?? -1}\n` +
+                `open_yn: ${page.open_yn}\n` +
                 // `depth: ${page.depth ?? 0}\n` +
                 // `seq: ${page.seq ?? 0}\n` +
                 `last_synced: ${now}\n` +
+                // `icon: "${page.open_yn === "N" ? "IbLocked" : ""}"\n` +  // 자물쇠 아이콘 추가
                 `---\n`;
 
             // 페이지 내용 추가
@@ -240,11 +242,16 @@ export async function savePagesToMarkdown(pages: any[], folderPath: string) {
             // 파일 생성
             await this.app.vault.create(filePath, content);
 
+            if (page.open_yn === "N") {
+                // addLockIcon(filePath);
+                // await addLockIcon(app, filePath);
+            }
+
             // 하위 페이지 처리
             if (page.children && page.children.length > 0) {
                 const childFolderPath = `${folderPath}/${sanitizedFileName}`;
                 await ensureFolderExists(childFolderPath);
-                await savePagesToMarkdown(page.children, childFolderPath);
+                await savePagesToMarkdown(app, page.children, childFolderPath);
             }
         } catch (error) {
             console.error(`Failed to save page: ${page.subject}`, error);

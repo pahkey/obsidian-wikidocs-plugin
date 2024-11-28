@@ -1,7 +1,13 @@
-.metadata-container {
+/* .metadata-container {
     display: none !important;
-}
+} */
 
 div.tree-item-self[data-path$="/metadata.md"] {
     display: none !important;
+}
+
+.lock-icon {
+    font-size: 14px; /* 아이콘 크기 */
+    color: gray; /* 아이콘 색상 */
+    cursor: default; /* 클릭 불가능 */
 }

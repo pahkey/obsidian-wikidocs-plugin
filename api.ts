@@ -32,7 +32,7 @@ export class ApiClient {
 		});
 	}
 
-    async updatePageOnServer(pageId: number, content: string, metadata: { subject: string, book_id?: number, parent_id?: number }): Promise<number> {
+    async updatePageOnServer(pageId: number, content: string, metadata: { subject: string, book_id?: number, parent_id?: number, open_yn?: string }): Promise<number> {
 		// 요청 데이터 구성
 		const data = {
 			id: pageId, // 페이지 ID
@@ -40,6 +40,7 @@ export class ApiClient {
             parent_id: metadata.parent_id,
 			subject: metadata.subject, // 제목 (필수 항목)
 			content: content.trim(), // 내용 (필수 항목)
+			open_yn: metadata.open_yn,
 		};
 	
 		// 요청 전송
@@ -90,10 +91,10 @@ export class ApiClient {
 		return imageMap;
 	}
 
-	async downloadBook(bookId: number) {
+	async downloadBook(app:App, bookId: number) {
 		const response = await this.fetchWithAuth(`/books/${bookId}/`);
 		if (!response.ok) {
-			new Notice("Failed to fetch the selected book.");
+			new Notice("책 내려받기가 실패했습니다.");
 			return;
 		}
 
@@ -102,8 +103,8 @@ export class ApiClient {
 
 		await ensureFolderExists(folderPath);
 		await saveBookMetadata(folderPath, bookId, bookData.subject);
-		await savePagesToMarkdown(bookData.pages, folderPath);
+		await savePagesToMarkdown(app, bookData.pages, folderPath);
 
-		new Notice(`Book "${bookData.subject}" fetched successfully!`);
+		new Notice(`"${bookData.subject}" 책을 성공적으로 내려받았습니다!`);
 	}
 }
