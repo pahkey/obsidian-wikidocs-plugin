@@ -1,94 +1,35 @@
-# Obsidian Sample Plugin
+# Obsidian 위키독스 플러그인
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Obsidian 위키독스 플러그인입니다.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+이 플러그인은 옵시디언에서 위키독스의 책을 내려받아서 편집할 수 있습니다.
+그리고 편집한 내용은 다시 위키독스에 저장할 수 있습니다.
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+## 플러그인 사용을 위한 준비
 
-## First time developing plugins?
+1. 위키독스에 로그인합니다.
+2. 위키독스에서 API 토큰을 발급 받습니다.
+3. 플러그인을 설치한 후 API Base URL에 "https://wikidocs.net/napi"를 입력합니다.
+4. API Token에는 2번에서 발급 받은 토큰을 입력합니다.
 
-Quick starting guide for new plugin devs:
+## 위키독스 책 다운로드 하기
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+1. 플러그인을 설치했으면 옵시디언 화면의 가장 좌측 메뉴에 책 모양의 아이콘이 표시됩니다.
+2. 이 아이콘을 눌러 내가 작성중인 위키독스 책을 조회할 수 있습니다.
+3. 조회된 책 중 1개를 선택합니다.
 
-## Releasing new releases
+## 책 보내기
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+위키독스에서 내려받은 책을 수정한 후에는 책 제목에서 마우스를 우클릭하면 "위키독스 보내기" 메뉴가 보입니다.
+이 메뉴를 선택하면 수정한 내용이 위키독스에 반영됩니다.
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+## 책 가져오기
 
-## Adding your plugin to the community plugin list
+책 제목에서 마우스를 우클릭하면 "위키독스 내려받기" 메뉴가 보입니다.
+이 메뉴를 선택하면 위키독스 기준으로 책이 업데이트 됩니다. 
+신규로 작성한 파일을 "위키독스 보내기"로 보내지 않고 이 기능을 사용하면 삭제될 수 있으니 주의해야 합니다.
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
 
-## How to use
+## 위키독스 옵시디언 플러그인 가이드
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
-```
-
-If you have multiple URLs, you can also do:
-
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
-
-## API Documentation
-
-See https://github.com/obsidianmd/obsidian-api
+[위키독스 옵시디언 플러그인 가이드 보기](https://wikidocs.net/267526)
