@@ -1,7 +1,7 @@
 {
 	"id": "wikidocs-plugin",
 	"name": "WikiDocs Plugin",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"minAppVersion": "0.15.0",
 	"description": "위키독스 옵시디언 플러그인",
 	"author": "pahkey",
