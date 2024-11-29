@@ -149,9 +149,8 @@ export default class WikiDocsPlugin extends Plugin {
 	
 			// Step 3: 책 데이터를 새로 저장
 			await savePagesToMarkdown(this.app, bookData.pages, folder.path);
-			this.app.workspace.trigger("iconize:refresh");
-	
 			new Notice(`"${bookData.subject}" 책을 성공적으로 내려받았습니다.`);
+			
 		} catch (error) {
 			console.error(`Failed to sync folder "${folderName}"`, error);
 			new Notice(`책 내려받기가 실패했습니다.`);
