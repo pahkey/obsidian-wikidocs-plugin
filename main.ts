@@ -197,7 +197,7 @@ export default class WikiDocsPlugin extends Plugin {
 					sanitizeFileName(metadata.subject) !== sanitizeFileName(extractTitleFromFilePath(file.path)); // 제목 변경 감지
 	
 				if (needsSync) {
-					console.log(`File "${file.path}" needs to be synced.`);
+					// console.log(`File "${file.path}" needs to be synced.`);
 					changedCount++;
 	
 					const contentWithoutFrontMatter = ensureLineBreaks(removeFrontMatter(fileContent));

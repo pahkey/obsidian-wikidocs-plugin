@@ -64,7 +64,7 @@ export async function readTopLevelMetadata(fileOrFolder: TAbstractFile): Promise
         current = current.parent;
     }
 
-    console.warn("No metadata.md found in any parent folder.");
+    // console.warn("No metadata.md found in any parent folder.");
     return null; // 메타데이터를 찾을 수 없으면 null 반환
 }
 

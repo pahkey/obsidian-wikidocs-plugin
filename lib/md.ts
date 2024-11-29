@@ -172,7 +172,7 @@ export async function addFrontMatterToFile(file: TFile) {
     if (metadata && metadata.id) {
         bookId = typeof metadata.id === "string" ? parseInt(metadata.id, 10) : metadata.id as number;
     } else {
-        console.warn("No ID found in metadata.md.");
+        // console.warn("No ID found in metadata.md.");
     }
 
     const parentId = await getParentId(file);
