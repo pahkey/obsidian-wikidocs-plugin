@@ -1,6 +1,6 @@
-import { saveBookMetadata, savePagesToMarkdown } from "md";
+import { PageMetadata, saveBookMetadata, savePagesToMarkdown } from "lib/md";
+import { ensureFolderExists, sanitizeFileName } from "lib/utils";
 import { App, Notice, TFile } from "obsidian";
-import { ensureFolderExists, sanitizeFileName } from "utils";
 import { MyPluginSettings } from "./config";
 
 export class ApiClient {
@@ -32,10 +32,10 @@ export class ApiClient {
 		});
 	}
 
-    async updatePageOnServer(pageId: number, content: string, metadata: { subject: string, book_id?: number, parent_id?: number, open_yn?: string }): Promise<number> {
+    async updatePageOnServer(metadata: PageMetadata, content: string): Promise<number> {
 		// 요청 데이터 구성
 		const data = {
-			id: pageId, // 페이지 ID
+			id: metadata.id, // 페이지 ID
 			book_id: metadata.book_id,
             parent_id: metadata.parent_id,
 			subject: metadata.subject, // 제목 (필수 항목)
@@ -44,7 +44,7 @@ export class ApiClient {
 		};
 	
 		// 요청 전송
-		const response = await this.fetchWithAuth(`/pages/${pageId}/`, {
+		const response = await this.fetchWithAuth(`/pages/${metadata.id}/`, {
 			method: "PUT",
 			headers: {
 				"Content-Type": "application/json",
@@ -58,7 +58,7 @@ export class ApiClient {
             return data.id;
 		} else {
 			const errorText = await response.text();
-			console.error(`Failed to update page ${pageId}: ${errorText}`);
+			console.error(`Failed to update page ${metadata.id}: ${errorText}`);
             return -1;
 		}
 	}

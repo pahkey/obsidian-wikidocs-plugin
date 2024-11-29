@@ -9,23 +9,23 @@ import {
 	removeFrontMatter,
 	sanitizeFileName,
 	showConfirmationDialog
-} from "./utils";
+} from "./lib/utils";
 
 import {
 	DEFAULT_SETTINGS,
 	MyPluginSettings,
-} from "./config";
+} from "./lib/config";
 
 import {
 	ApiClient,
-} from "./api";
+} from "./lib/api";
 
 import {
 	addFrontMatterToFile,
 	extractMetadataFromFrontMatter,
 	getBookIdFromMetadata,
 	savePagesToMarkdown
-} from "./md";
+} from "./lib/md";
 
 export default class MyPlugin extends Plugin {
 	settings: MyPluginSettings;
@@ -99,7 +99,6 @@ export default class MyPlugin extends Plugin {
 			this.app.vault.on("create", async (file) => {
 				if (file instanceof TFile && file.extension === "md") {
 					const content = await this.app.vault.read(file);
-		
 					if (content.trim() === "") {
 						await addFrontMatterToFile(file); // Front Matter 추가
 					} else {
@@ -209,31 +208,13 @@ export default class MyPlugin extends Plugin {
 						await this.apiClient.uploadImagesForPage(this.app, metadata.id, embeddedImages);
 					}
 	
-					// 이미지 URL 업데이트
-					let updatedContent = contentWithoutFrontMatter;
-					// for (const [localPath, uploadedUrl] of Object.entries(uploadedImages)) {
-					// 	updatedContent = updatedContent.replace(localPath, uploadedUrl);
-					// }
-	
 					// 서버에 업데이트
-					const page_id = await this.apiClient.updatePageOnServer(metadata.id, updatedContent, {
-						subject: extractTitleFromFilePath(file.path),
-						book_id: metadata.book_id,
-						parent_id: metadata.parent_id,
-						open_yn: metadata.open_yn,
-					});
-
-					// const updatedFrontMatter = updateLastSyncedFrontMatter(fileContent);
-					// await this.app.vault.modify(file, updatedFrontMatter);
+					metadata.subject = extractTitleFromFilePath(file.path);
+					const page_id = await this.apiClient.updatePageOnServer(metadata, contentWithoutFrontMatter);
 
 					if (metadata.id == -1) { // 신규 파일인 경우에 이미지 업로드후 저장 한번 더!!
 						await this.apiClient.uploadImagesForPage(this.app, page_id, embeddedImages);
-						await this.apiClient.updatePageOnServer(page_id, updatedContent, {
-							subject: extractTitleFromFilePath(file.path),
-							book_id: metadata.book_id,
-							parent_id: metadata.parent_id,
-							open_yn: metadata.open_yn,
-						});
+						await this.apiClient.updatePageOnServer(metadata, contentWithoutFrontMatter);
 					}
 				}
 			} catch (error) {

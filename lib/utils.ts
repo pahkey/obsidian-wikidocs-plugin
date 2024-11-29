@@ -30,23 +30,6 @@ export function ensureLineBreaks(content: string): string {
     });
 }
 
-export function updateLastSyncedFrontMatter(content: string): string {
-    const now = new Date().toISOString();
-    const frontMatterMatch = content.match(/^---[\s\S]*?---/);
-
-    if (frontMatterMatch) {
-        const frontMatter = frontMatterMatch[0];
-        const updatedFrontMatter = frontMatter.includes("last_synced:")
-            ? frontMatter.replace(/last_synced:.*/, `last_synced: ${now}`)
-            : frontMatter.trimEnd() + `\nlast_synced: ${now}\n`;
-
-        return content.replace(frontMatter, updatedFrontMatter);
-    } else {
-        const frontMatter = `---\nlast_synced: ${now}\n---\n\n`;
-        return frontMatter + content;
-    }
-}
-
 export async function readTopLevelMetadata(fileOrFolder: TAbstractFile): Promise<Record<string, string | number> | null> {
     let current: TAbstractFile | null = fileOrFolder;
 
@@ -84,7 +67,6 @@ export async function readTopLevelMetadata(fileOrFolder: TAbstractFile): Promise
     console.warn("No metadata.md found in any parent folder.");
     return null; // 메타데이터를 찾을 수 없으면 null 반환
 }
-
 
 export async function deleteFolderContents(folder: TFolder): Promise<void> {
     const abstractFiles = [...folder.children]; // 자식 파일 및 폴더 가져오기
@@ -138,7 +120,6 @@ export function extractEmbeddedImages(content: string): TFile[] {
 
     return imageFiles;
 }
-
 
 export async function showConfirmationDialog(message: string): Promise<boolean> {
     return new Promise((resolve) => {

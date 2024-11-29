@@ -7,6 +7,86 @@ import {
 } from "./utils";
 
 
+export class PageMetadata {
+    id: number;
+    subject: string;
+    book_id?: number;
+    parent_id?: number;
+    open_yn?: string;
+    last_synced?: string;
+
+    constructor(data: {
+        id: number;
+        subject: string;
+        last_synced?: string;
+        book_id?: number;
+        parent_id?: number;
+        open_yn?: string;
+    }) {
+        this.id = data.id;
+        this.subject = data.subject;
+        this.last_synced = data.last_synced;
+        this.book_id = data.book_id;
+        this.parent_id = data.parent_id;
+        this.open_yn = data.open_yn;
+    }
+
+    // Front Matter를 파싱하여 객체 생성
+    static fromFrontMatter(frontMatter: string): PageMetadata {
+        const metadata: { [key: string]: string | number | undefined } = {};
+
+        const lines = frontMatter.split("\n");
+        for (const line of lines) {
+            const colonIndex = line.indexOf(":");
+            if (colonIndex !== -1) {
+                const key = line.slice(0, colonIndex).trim();
+                const value = line.slice(colonIndex + 1).trim();
+                metadata[key] = isNaN(Number(value)) ? value : Number(value);
+            }
+        }
+
+        if (!metadata.id || !metadata.subject) {
+            throw new Error("Front Matter must contain 'id' and 'subject'.");
+        }
+
+        if (metadata.parent_id && typeof metadata.parent_id === "string") {
+            metadata.parent_id = metadata.parent_id.replace(/^"|"$/g, "");
+            metadata.parent_id = parseInt(metadata.parent_id);
+        }
+
+        return new PageMetadata({
+            id: metadata.id as number,
+            subject: metadata.subject as string,
+            last_synced: metadata.last_synced as string,
+            book_id: metadata.book_id as number,
+            parent_id: metadata.parent_id as number,
+            open_yn: metadata.open_yn as string,
+        });
+    }
+
+    // 필요한 추가 메서드
+    isLocked(): boolean {
+        return this.open_yn === "N";
+    }
+
+    updateLastSynced(): void {
+        this.last_synced = new Date().toISOString();
+    }
+
+    getFrontMatter(): string {
+        const frontMatter = `---\n` +
+            `id: ${this.id}\n` +
+            `subject: ${this.subject}\n` +
+            `book_id: ${this.book_id ?? -1}\n` +
+            `parent_id: ${this.parent_id ?? -1}\n` +
+            `open_yn: ${this.open_yn}\n` +
+            `last_synced: ${this.last_synced}\n` +
+            `---\n`;
+        return frontMatter;
+    }
+}
+
+
 export async function saveBookMetadata(folderPath: string, bookId: number, bookTitle: string) {
     const metadataPath = `${folderPath}/metadata.md`;
     const metadataContent = `---\n` +
@@ -81,7 +161,6 @@ function getPureContent(content: string): string {
 
 export async function addFrontMatterToFile(file: TFile) {
     const now = new Date().toISOString();
-    // const parentFolderPath = readTopLevelMetadata(file);
 
     let bookId = -1; // 기본값
     const metadata = await readTopLevelMetadata(file);
@@ -92,30 +171,25 @@ export async function addFrontMatterToFile(file: TFile) {
     }
 
     const parentId = await getParentId(file);
-
     const content = await this.app.vault.read(file);
     const frontMatterMatch = content.match(/^---[\s\S]*?---\n/);
 
     let updatedContent;
     if (frontMatterMatch) { // 기존에 있는 파일
         const metadata = await extractMetadataFromFrontMatter(file);
-        const frontMatter = `---\n` +
-        `id: ${metadata.id}\n` + // 고유 ID 생성
-        `book_id: ${bookId}\n` + // metadata.md에서 읽은 book_id 추가
-        `parent_id: ${parentId}\n` + // parentId
-        `subject: ${metadata.subject}\n` + // 파일 이름을 제목으로 사용
-        `last_synced:\n` +
-        `---\n`;
-
+        metadata.parent_id = parentId;
+        metadata.last_synced = ''; // 동기화를 위해 비워둔다.
+        const frontMatter = metadata.getFrontMatter();
         updatedContent = frontMatter + getPureContent(content);
     }else { // 신규 생성
-        const frontMatter = `---\n` +
-        `id: -1\n` + // 고유 ID 생성
-        `book_id: ${bookId}\n` + // metadata.md에서 읽은 book_id 추가
-        `parent_id: ${parentId}\n` + // parentId
-        `subject: ${sanitizeFileName(file.basename)}\n` + // 파일 이름을 제목으로 사용
-        `last_synced: ${now}\n` +
-        `---\n`;
+        const metadata = new PageMetadata({
+            id: -1,
+            subject: sanitizeFileName(file.basename),
+            last_synced: now,
+            book_id: bookId,
+            parent_id: parentId,
+        });
+        const frontMatter = metadata.getFrontMatter();
         updatedContent = frontMatter + content;
     }
 
@@ -137,81 +211,12 @@ export async function getBookIdFromMetadata(folderPath: string): Promise<number 
     return null;
 }
 
-export async function updatePagesInFolder(pages: any[], folderPath: string) {
-    for (const page of pages) {
-        const sanitizedFileName = sanitizeFileName(page.subject);
-        const filePath = `${folderPath}/${sanitizedFileName}.md`;
-
-        try {
-            const existingFile = this.app.vault.getAbstractFileByPath(filePath);
-
-            const frontMatter = `---\n` +
-                `id: ${page.id}\n` +
-                `subject: ${page.subject}\n` +
-                `parent_id: ${page.parent_id ?? "null"}\n` +
-                // `depth: ${page.depth ?? 0}\n` +
-                // `seq: ${page.seq ?? 0}\n` +
-                `---\n\n`;
-
-            const content = frontMatter + (page.content ?? "No content available.");
-
-            if (existingFile instanceof TFile) {
-                // 기존 파일이 있으면 업데이트
-                await this.app.vault.modify(existingFile, content);
-            } else {
-                // 파일이 없으면 새로 생성
-                await this.app.vault.create(filePath, content);
-            }
-
-            // 하위 페이지 처리
-            if (page.children && page.children.length > 0) {
-                const childFolderPath = `${folderPath}/${sanitizedFileName}`;
-                await this.ensureFolderExists(childFolderPath);
-                await this.updatePagesInFolder(page.children, childFolderPath);
-            }
-        } catch (error) {
-            console.error(`Failed to update page: ${page.subject}`, error);
-        }
-    }
-}
-
 export async function extractMetadataFromFrontMatter(file: TFile): 
-        Promise<{ id: number; subject: string; last_synced?: string; book_id?: number; parent_id?: number; open_yn?: string;}> {
+        Promise<PageMetadata> {
     const content = await this.app.vault.read(file);
     const frontMatterMatch = content.match(/---([\s\S]*?)---/);
-
     if (frontMatterMatch) {
-        const frontMatterContent = frontMatterMatch[1];
-        const metadata: { [key: string]: string | number } = {};
-
-        frontMatterContent.split("\n").forEach((line: string) => {
-            const colonIndex = line.indexOf(":");
-            if (colonIndex !== -1) {
-                const key = line.slice(0, colonIndex).trim();
-                const value = line.slice(colonIndex + 1).trim();
-                if (key && value) {
-                    metadata[key] = isNaN(Number(value)) ? value : Number(value);
-                }
-            }
-        });
-
-        if (metadata.parent_id && typeof metadata.parent_id === "string") {
-            metadata.parent_id = metadata.parent_id.replace(/^"|"$/g, "");
-            metadata.parent_id = parseInt(metadata.parent_id);
-        }
-
-        if (metadata.id && metadata.subject) {
-            return {
-                id: metadata.id as number,
-                subject: metadata.subject as string,
-                last_synced: metadata.last_synced as string,
-                book_id: metadata.book_id as number,
-                parent_id: metadata.parent_id as number,
-                open_yn: metadata.open_yn as string,
-            };
-        } else {
-            throw new Error("Front Matter must contain 'id' and 'subject'.");
-        }
+        return PageMetadata.fromFrontMatter(frontMatterMatch[1]);
     } else {
         throw new Error(`No Front Matter found in file: ${file.path}`);
     }
@@ -224,17 +229,11 @@ export async function savePagesToMarkdown(app:App, pages: any[], folderPath: str
 
         try {
             const now = new Date().toISOString();
+            
             // Front Matter 생성
-            const frontMatter = `---\n` +
-                `id: ${page.id}\n` +
-                `subject: ${page.subject}\n` +
-                `parent_id: ${page.parent_id ?? -1}\n` +
-                `open_yn: ${page.open_yn}\n` +
-                // `depth: ${page.depth ?? 0}\n` +
-                // `seq: ${page.seq ?? 0}\n` +
-                `last_synced: ${now}\n` +
-                // `icon: "${page.open_yn === "N" ? "IbLocked" : ""}"\n` +  // 자물쇠 아이콘 추가
-                `---\n`;
+            const metadata = new PageMetadata(page);
+            metadata.last_synced = now;
+            const frontMatter = metadata.getFrontMatter();
 
             // 페이지 내용 추가
             const content = frontMatter + (page.content ?? "No content available.");
