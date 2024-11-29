@@ -3,7 +3,7 @@
 	"name": "WikiDocs",
 	"version": "1.0.4",
 	"minAppVersion": "0.15.0",
-	"description": "A plugin for WikiDocs",
+	"description": "Fetch, edit, and upload WikiDocs books.",
 	"author": "pahkey",
 	"authorUrl": "https://wikidocs.net",
 	"fundingUrl": "https://wikidocs.net",
