@@ -95,14 +95,19 @@ export async function saveBookMetadata(folderPath: string, bookId: number, bookT
         `---\n`;
 
     const existingFile = this.app.vault.getAbstractFileByPath(metadataPath);
-    if (existingFile) {
+
+    if (existingFile instanceof TFile) {
         // 기존 파일 업데이트
-        await this.app.vault.modify(existingFile as TFile, metadataContent);
-    } else {
+        await this.app.vault.modify(existingFile, metadataContent);
+    } else if (!existingFile) {
         // 새 파일 생성
         await this.app.vault.create(metadataPath, metadataContent);
+    } else {
+        // 예상치 못한 타입의 파일 처리
+        console.error(`The path "${metadataPath}" exists but is not a valid file.`);
     }
 }
+
 
 async function getParentId(file: TFile) {
     // 1. 부모 폴더 가져오기

@@ -5,3 +5,64 @@
 div.tree-item-self[data-path$="/metadata.md"] {
     display: none !important;
 }
+
+/* dialog buttons */
+.dialog-confirm-button {
+    margin-right: 10px;
+}
+
+/* Modal header styling */
+.book-selection-header {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+/* Book list styling */
+.book-selection-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    background-color: #f9f9f9;
+}
+
+/* Book list item styling */
+.book-selection-list-item {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.book-selection-list-item:hover {
+    background-color: #f0f0f0;
+}
+
+/* Empty message styling */
+.book-selection-empty-message {
+    padding: 10px 15px;
+    text-align: center;
+    color: #999;
+}
+
+/* 공통 스타일 */
+.plugin-setting-input {
+	width: 100%;
+	min-width: 300px;
+	padding: 5px;
+	font-size: 14px;
+	box-sizing: border-box;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	outline: none;
+}
+
+.plugin-setting-input:focus {
+	border-color: #007bff; /* 포커스 시 테두리 색상 */
+	box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* 포커스 시 외곽선 효과 */
+}

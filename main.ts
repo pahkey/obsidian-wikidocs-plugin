@@ -13,7 +13,7 @@ import {
 
 import {
 	DEFAULT_SETTINGS,
-	MyPluginSettings,
+	WikiDocsPluginSettings,
 } from "./lib/config";
 
 import {
@@ -27,8 +27,8 @@ import {
 	savePagesToMarkdown
 } from "./lib/md";
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class WikiDocsPlugin extends Plugin {
+	settings: WikiDocsPluginSettings;
 	apiClient: ApiClient;
 	
 
@@ -116,7 +116,7 @@ export default class MyPlugin extends Plugin {
 		);
 
 		// 설정 탭 추가
-		this.addSettingTab(new MyPluginSettingTab(this.app, this));
+		this.addSettingTab(new WikiDocsPluginSettingTab(this.app, this));
 	}
 
 	async onunload() {
@@ -243,42 +243,21 @@ export default class MyPlugin extends Plugin {
 	
 			modal.onClose = () => resolve(null);
 	
-			// 헤더 스타일링
+			// 헤더
 			const header = modal.contentEl.createEl("h2", {
 				text: "위키독스 책을 선택해 주세요.",
 			});
-			header.style.textAlign = "center";
-			header.style.marginBottom = "20px";
-			header.style.color = "#333";
+			header.classList.add("book-selection-header");
 	
-			// 리스트 스타일링
+			// 리스트
 			const list = modal.contentEl.createEl("ul");
-			list.style.listStyleType = "none";
-			list.style.padding = "0";
-			list.style.margin = "0";
-			list.style.maxHeight = "300px";
-			list.style.overflowY = "auto";
-			list.style.border = "1px solid #ddd";
-			list.style.borderRadius = "5px";
-			list.style.boxShadow = "0 2px 5px rgba(0,0,0,0.1)";
-			list.style.backgroundColor = "#f9f9f9";
+			list.classList.add("book-selection-list");
 	
 			books.forEach((book: { id: number; subject: string }) => {
 				const listItem = list.createEl("li", {
 					text: book.subject,
 				});
-				listItem.style.padding = "10px 15px";
-				listItem.style.borderBottom = "1px solid #eee";
-				listItem.style.cursor = "pointer";
-				listItem.style.transition = "background-color 0.2s ease";
-	
-				listItem.addEventListener("mouseenter", () => {
-					listItem.style.backgroundColor = "#f0f0f0";
-				});
-	
-				listItem.addEventListener("mouseleave", () => {
-					listItem.style.backgroundColor = "";
-				});
+				listItem.classList.add("book-selection-list-item");
 	
 				listItem.addEventListener("click", () => {
 					resolve(book.id);
@@ -291,9 +270,7 @@ export default class MyPlugin extends Plugin {
 				const emptyMessage = list.createEl("li", {
 					text: "책 목록이 비어 있습니다.",
 				});
-				emptyMessage.style.padding = "10px 15px";
-				emptyMessage.style.textAlign = "center";
-				emptyMessage.style.color = "#999";
+				emptyMessage.classList.add("book-selection-empty-message");
 			}
 	
 			modal.open();
@@ -311,10 +288,10 @@ export default class MyPlugin extends Plugin {
 	}
 }
 
-class MyPluginSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+class WikiDocsPluginSettingTab extends PluginSettingTab {
+	plugin: WikiDocsPlugin;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: WikiDocsPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -336,10 +313,9 @@ class MyPluginSettingTab extends PluginSettingTab {
 						this.plugin.settings.apiBaseUrl = value;
 						await this.plugin.saveSettings();
 					});
-	
-				// 스타일 적용
-				text.inputEl.style.width = "100%"; // 너비 100%
-				text.inputEl.style.minWidth = "300px"; // 최소 너비
+
+				// 클래스 추가
+				text.inputEl.classList.add("plugin-setting-input");
 			});
 
 		new Setting(containerEl)
@@ -353,10 +329,9 @@ class MyPluginSettingTab extends PluginSettingTab {
 						this.plugin.settings.apiToken = value;
 						await this.plugin.saveSettings();
 					});
-	
-				// 스타일 적용
-				text.inputEl.style.width = "100%"; // 너비 100%
-				text.inputEl.style.minWidth = "300px"; // 최소 너비
+
+				// 클래스 추가
+				text.inputEl.classList.add("plugin-setting-input");
 			});
 	}
 }

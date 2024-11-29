@@ -76,19 +76,7 @@ export async function deleteFolderContents(folder: TFolder): Promise<void> {
             // metadata.md는 삭제하지 않음
             continue;
         }
-
-        if (file instanceof TFolder) {
-            // 재귀적으로 하위 폴더의 내용 삭제
-            await deleteFolderContents(file);
-            await this.app.vault.delete(file, true);
-
-            // 폴더 삭제 상태 확인
-            // await this.waitForFolderDeletion(file.path);
-
-        } else if (file instanceof TFile) {
-            // 파일 삭제
-            await this.app.vault.delete(file);
-        }
+        await this.app.fileManager.trashFile(file);
     }
 }
 
@@ -136,6 +124,7 @@ export async function showConfirmationDialog(message: string): Promise<boolean> 
 
         // 확인 버튼
         const confirmButton = modal.contentEl.createEl("button", { text: "확인" });
+        confirmButton.classList.add("dialog-confirm-button"); // 클래스 추가
         confirmButton.addEventListener("click", () => {
             modal.close();
             resolve(true); // 사용자가 확인을 선택
@@ -143,14 +132,12 @@ export async function showConfirmationDialog(message: string): Promise<boolean> 
 
         // 취소 버튼
         const cancelButton = modal.contentEl.createEl("button", { text: "취소" });
+        cancelButton.classList.add("dialog-cancel-button"); // 클래스 추가
         cancelButton.addEventListener("click", () => {
             modal.close();
             resolve(false); // 사용자가 취소를 선택
         });
-
-        // 스타일 추가
-        confirmButton.style.marginRight = "10px";
-
+        
         modal.open();
     });
 }

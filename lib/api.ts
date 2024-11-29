@@ -1,12 +1,12 @@
 import { PageMetadata, saveBookMetadata, savePagesToMarkdown } from "lib/md";
 import { ensureFolderExists, sanitizeFileName } from "lib/utils";
 import { App, Notice, TFile } from "obsidian";
-import { MyPluginSettings } from "./config";
+import { WikiDocsPluginSettings } from "./config";
 
 export class ApiClient {
-	private settings: MyPluginSettings;
+	private settings: WikiDocsPluginSettings;
 
-	constructor(settings: MyPluginSettings) {
+	constructor(settings: WikiDocsPluginSettings) {
 		this.settings = settings;
 	}
 
