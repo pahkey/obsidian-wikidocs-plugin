@@ -162,7 +162,7 @@ export default class WikiDocsPlugin extends Plugin {
 		const files = this.app.vault.getFiles().filter((file) => file.path.startsWith(folder.path));
 	
 		let changedCount = 0;
-	
+		let hasError = false;
 		for (const file of files) {
 			try {
 				if (file.name === "metadata.md") {
@@ -217,11 +217,12 @@ export default class WikiDocsPlugin extends Plugin {
 					}
 				}
 			} catch (error) {
+				hasError = true;
 				console.error(`Failed to sync file to server: ${file.path}`, error);
 			}
 		}
 	
-		if (changedCount > 0) {
+		if (!hasError && changedCount > 0) {
 			await this.syncFromServer(folder);
 		}
 	
