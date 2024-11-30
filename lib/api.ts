@@ -1,7 +1,8 @@
-import { PageMetadata, saveBookMetadata, savePagesToMarkdown } from "lib/md";
-import { ensureFolderExists, sanitizeFileName } from "lib/utils";
 import { App, Notice, TFile } from "obsidian";
+import { saveBlogMetadata, saveBlogToMarkdown } from "./blog_md";
 import { WikiDocsPluginSettings } from "./config";
+import { PageMetadata, saveBookMetadata, savePagesToMarkdown } from "./md";
+import { ensureFolderExists, sanitizeFileName } from "./utils";
 
 export class ApiClient {
 	private settings: WikiDocsPluginSettings;
@@ -106,5 +107,22 @@ export class ApiClient {
 		await savePagesToMarkdown(app, bookData.pages, folderPath);
 
 		new Notice(`"${bookData.subject}" 책을 성공적으로 내려받았습니다!`);
+	}
+
+	async downloadBlog(app:App) {
+		const response = await this.fetchWithAuth(`/blog/`);
+		if (!response.ok) {
+			new Notice("블로그 내려받기가 실패했습니다.");
+			return;
+		}
+
+		const blogData = await response.json();
+		const folderPath = "[Blog] "+sanitizeFileName(blogData.name);
+
+		await ensureFolderExists(folderPath);
+		await saveBlogMetadata(folderPath, blogData.id, blogData.url);
+		await saveBlogToMarkdown(app, blogData.blog_pages, folderPath);
+
+		new Notice(`"${blogData.url}" 블로그를 성공적으로 내려받았습니다!`);
 	}
 }

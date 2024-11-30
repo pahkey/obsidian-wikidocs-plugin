@@ -56,6 +56,15 @@ export default class WikiDocsPlugin extends Plugin {
 				}
 			},
 		});
+
+		// 책 리스트에서 선택하여 가져오기
+		this.addCommand({
+			id: "fetch-blog",
+			name: "위키독스 블로그 가져오기",
+			callback: async () => {
+				this.apiClient.downloadBlog(this.app);
+			},
+		});
 		
 		// 컨텍스트 메뉴에 항목 추가
 		this.registerEvent(
@@ -88,6 +97,34 @@ export default class WikiDocsPlugin extends Plugin {
 								.setIcon("cloud-upload")
 								.onClick(async () => {
 									await this.syncToServer(file);
+								});
+						});
+					}
+
+					const blogMetadataFilePath = `${file.path}/blog-metadata.md`;
+            		const blogMetadataFile = this.app.vault.getAbstractFileByPath(blogMetadataFilePath);
+
+					if (blogMetadataFile instanceof TFile) {
+						// 위키독스로 블로그로부터 내려받기
+						menu.addItem((item) => {
+							item.setTitle("위키독스 블로그 내려받기")
+								.onClick(async () => {
+									const confirmed = await showConfirmationDialog(
+										"[주의] 이 블로그가 위키독스 기준으로 업데이트됩니다.\n" +
+										"'위키독스 블로그 보내기'로 수정한 데이터를 전송했는지 확인해 주세요.\n" +
+										"정말로 내려받으시겠습니까?"
+									);
+									if (confirmed) {
+										// await this.syncBlogFromServer(file);
+									} 
+								});
+						});
+			
+						// 위키독스로 보내기
+						menu.addItem((item) => {
+							item.setTitle("위키독스 블로그 보내기")
+								.onClick(async () => {
+									// await this.syncBlogToServer(file);
 								});
 						});
 					}

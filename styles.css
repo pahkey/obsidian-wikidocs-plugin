@@ -1,6 +1,6 @@
-.metadata-container {
+/* .metadata-container {
     display: none !important;
-}
+} */
 
 div.tree-item-self[data-path$="/metadata.md"] {
     display: none !important;
