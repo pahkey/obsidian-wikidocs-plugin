@@ -126,28 +126,24 @@ export default class WikiDocsPlugin extends Plugin {
 		const folderName = folder.name;
 	
 		try {
-			// Step 1: 책 폴더와 페이지 삭제 (동기적 흐름)
-			await deleteFolderContents(folder);
-
-			// 최상위 폴더 삭제 상태 확인 (필요 시)
-			// await this.waitForFolderDeletion(folder.path);
-	
-			// Step 2: 서버에서 책 데이터 가져오기
 			const bookId = await getBookIdFromMetadata(folder.path);
 			if (!bookId) {
 				new Notice(`책의 메타데이터가 존재하지 않습니다.`);
 				return;
 			}
 	
+			// Step 1: 서버에서 책 데이터 가져오기
 			const bookResponse = await this.apiClient.fetchWithAuth(`/books/${bookId}/`);
 			if (!bookResponse.ok) {
 				new Notice("책 내려받기가 실패했습니다.");
 				return;
 			}
-	
-			const bookData = await bookResponse.json();
+
+			// Step 2: 책 폴더와 페이지 삭제 (동기적 흐름)
+			await deleteFolderContents(folder);
 	
 			// Step 3: 책 데이터를 새로 저장
+			const bookData = await bookResponse.json();
 			await savePagesToMarkdown(this.app, bookData.pages, folder.path);
 			new Notice(`"${bookData.subject}" 책을 성공적으로 내려받았습니다.`);
 			
