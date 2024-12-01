@@ -108,8 +108,9 @@ export default class WikiDocsPlugin extends Plugin {
 		);
 
 		this.registerEvent(
-			this.app.vault.on("rename", async (file) => {
-				if (file instanceof TFile && file.extension === "md") {
+			this.app.vault.on("rename", async (file, oldPath) => {
+				const oldPathBasename = oldPath.split("/").pop();
+				if (file instanceof TFile && file.name !== oldPathBasename && file.extension === "md" && file.name !== "metadata.md") {
 					addFrontMatterToFile(file);
 				}
 			})
@@ -196,7 +197,7 @@ export default class WikiDocsPlugin extends Plugin {
 					sanitizeFileName(metadata.subject) !== sanitizeFileName(extractTitleFromFilePath(file.path)); // 제목 변경 감지
 	
 				if (needsSync) {
-					// console.log(`File "${file.path}" needs to be synced.`);
+					new Notice(`${file.name} 페이지를 성공적으로 내보냈습니다!`);
 					changedCount++;
 	
 					const contentWithoutFrontMatter = ensureLineBreaks(removeFrontMatter(fileContent));
@@ -226,8 +227,6 @@ export default class WikiDocsPlugin extends Plugin {
 		if (!hasError && changedCount > 0) {
 			await this.syncFromServer(folder);
 		}
-	
-		new Notice(`책을 성공적으로 내보냈습니다!`);
 	}
 	
 
