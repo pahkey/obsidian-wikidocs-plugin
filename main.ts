@@ -212,6 +212,7 @@ export default class WikiDocsPlugin extends Plugin {
 					const page_id = await this.apiClient.updatePageOnServer(metadata, contentWithoutFrontMatter);
 
 					if (metadata.id == -1) { // 신규 파일인 경우에 이미지 업로드후 저장 한번 더!!
+						metadata.id = page_id;
 						await this.apiClient.uploadImagesForPage(this.app, page_id, embeddedImages);
 						await this.apiClient.updatePageOnServer(metadata, contentWithoutFrontMatter);
 					}

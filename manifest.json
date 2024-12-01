@@ -1,11 +1,11 @@
 {
 	"id": "wikidocs",
 	"name": "WikiDocs",
-	"version": "1.0.5",
+	"version": "1.0.6",
 	"minAppVersion": "0.15.0",
 	"description": "Fetch, edit, and upload WikiDocs books.",
 	"author": "pahkey",
 	"authorUrl": "https://wikidocs.net",
-	"fundingUrl": "https://wikidocs.net",
+	"fundingUrl": "",
 	"isDesktopOnly": false
 }
