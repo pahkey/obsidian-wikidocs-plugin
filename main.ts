@@ -2,7 +2,6 @@ import { App, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile, TFolder }
 
 import {
 	deleteFolderContents,
-	ensureLineBreaks,
 	extractEmbeddedImages,
 	extractTitleFromFilePath,
 	getFileModifiedTime,
@@ -197,10 +196,10 @@ export default class WikiDocsPlugin extends Plugin {
 					sanitizeFileName(metadata.subject) !== sanitizeFileName(extractTitleFromFilePath(file.path)); // 제목 변경 감지
 	
 				if (needsSync) {
-					new Notice(`${file.name} 페이지를 성공적으로 내보냈습니다!`);
 					changedCount++;
 	
-					const contentWithoutFrontMatter = ensureLineBreaks(removeFrontMatter(fileContent));
+					// const contentWithoutFrontMatter = ensureLineBreaks(removeFrontMatter(fileContent));
+					const contentWithoutFrontMatter = removeFrontMatter(fileContent);
 	
 					// 이미지 파일 처리
 					const embeddedImages = extractEmbeddedImages(contentWithoutFrontMatter);
@@ -217,6 +216,8 @@ export default class WikiDocsPlugin extends Plugin {
 						await this.apiClient.uploadImagesForPage(this.app, page_id, embeddedImages);
 						await this.apiClient.updatePageOnServer(metadata, contentWithoutFrontMatter);
 					}
+
+					new Notice(`${file.name} 페이지를 성공적으로 내보냈습니다!`);
 				}
 			} catch (error) {
 				hasError = true;
@@ -226,6 +227,8 @@ export default class WikiDocsPlugin extends Plugin {
 	
 		if (!hasError && changedCount > 0) {
 			await this.syncFromServer(folder);
+		}else {
+			new Notice(`변경된 페이지가 없습니다.`);
 		}
 	}
 	
