@@ -151,7 +151,7 @@ async function getParentId(file: TFile) {
     return parentFileId;
 }
 
-function getPureContent(content: string): string {
+export function getPureContent(content: string): string {
     // Front Matter 감지 (---로 시작하고 끝나는 블록)
     const frontMatterMatch = content.match(/^---[\s\S]*?---\n/);
 

@@ -23,6 +23,7 @@ import {
 	addFrontMatterToFile,
 	extractMetadataFromFrontMatter,
 	getBookIdFromMetadata,
+	getPureContent,
 	savePagesToMarkdown
 } from "./lib/md";
 
@@ -94,21 +95,44 @@ export default class WikiDocsPlugin extends Plugin {
 			})
 		);
 
-		this.registerEvent(
-			this.app.vault.on("create", async (file) => {
-				if (file instanceof TFile && file.extension === "md") {
-					const content = await this.app.vault.read(file);
-					if (content.trim() === "") {
-						await addFrontMatterToFile(file); // Front Matter 추가
-					} else {
+		this.app.vault.on("create", async (file) => {
+			if (file instanceof TFile && file.extension === "md") {
+				const content = await this.app.vault.read(file);
+				if (content.trim() === "") {
+					await addFrontMatterToFile(file); // Front Matter 추가
+				}else {
+					const metadata = await extractMetadataFromFrontMatter(file);
+					if (metadata.last_synced) {
+						const now = new Date();
+						const lastSyncedDate = new Date(metadata.last_synced);
+						const timeDifferenceInSeconds = Math.floor((now.getTime() - lastSyncedDate.getTime()) / 1000);
+
+						if (timeDifferenceInSeconds > 1) { // 파일 생성시간과 현재 시간이 5초 이상 차이날 경우 duplicate 파일임
+							// console.log('duplicate file!')
+							metadata.id = -1; // 신규 파일로
+							metadata.last_synced = ''; // 동기화를 위해 비워둔다.
+							const frontMatter = metadata.getFrontMatter();
+							const updatedContent = frontMatter + getPureContent(content);
+							await this.app.vault.modify(file, updatedContent);
+						}
 					}
 				}
-			})
-		);
+			}
+		})
 
 		this.registerEvent(
 			this.app.vault.on("rename", async (file, oldPath) => {
+				if (file instanceof TFolder) {
+					new Notice("폴더명 변경은 위키독스에 반영되지 않습니다.");
+					return;
+				}
+
 				const oldPathBasename = oldPath.split("/").pop();
+				if (file instanceof TFile && file.name === oldPathBasename) {
+					new Notice("폴더 이동은 위키독스에 반영되지 않습니다.");
+					return;
+				}
+				
 				if (file instanceof TFile && file.name !== oldPathBasename && file.extension === "md" && file.name !== "metadata.md") {
 					addFrontMatterToFile(file);
 				}
