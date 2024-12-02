@@ -30,18 +30,21 @@ import {
 export default class WikiDocsPlugin extends Plugin {
 	settings: WikiDocsPluginSettings;
 	apiClient: ApiClient;
-	
 
 	async onload() {
 		await this.loadSettings();
 		this.apiClient = new ApiClient(this.settings);
+		let isSyncProcess = false;
+		let layout_ready = false;
 
 		// 툴바에 아이콘 추가
         this.addRibbonIcon("book", "위키독스 책 목록 가져오기", async (evt: MouseEvent) => {
             // 책 목록 가져오기 명령 실행
             const bookId = await this.promptForBookSelection();
             if (bookId) {
-				this.apiClient.downloadBook(this.app, bookId);
+				isSyncProcess = true;
+				await this.apiClient.downloadBook(this.app, bookId);
+				isSyncProcess = false;
             }
         });
 
@@ -52,10 +55,13 @@ export default class WikiDocsPlugin extends Plugin {
 			callback: async () => {
 				const bookId = await this.promptForBookSelection();
 				if (bookId) {
-					this.apiClient.downloadBook(this.app, bookId);
+					isSyncProcess = true;
+					await this.apiClient.downloadBook(this.app, bookId);
+					isSyncProcess = false;
 				}
 			},
 		});
+		
 		
 		// 컨텍스트 메뉴에 항목 추가
 		this.registerEvent(
@@ -75,7 +81,9 @@ export default class WikiDocsPlugin extends Plugin {
 										"정말로 내려받으시겠습니까?"
 									);
 									if (confirmed) {
+										isSyncProcess = true;
 										await this.syncFromServer(file);
+										isSyncProcess = false;
 									} else {
 										// new Notice("동작이 취소되었습니다.");
 									}
@@ -87,22 +95,26 @@ export default class WikiDocsPlugin extends Plugin {
 							item.setTitle("위키독스 보내기")
 								.setIcon("cloud-upload")
 								.onClick(async () => {
+									isSyncProcess = true;
 									await this.syncToServer(file);
+									isSyncProcess = false;
 								});
 						});
 					}
 				}
 			})
 		);
-
-
-		let layout_ready = false;
+		
 		this.app.workspace.onLayoutReady(() => {
 			layout_ready = true;
 		});
 		
 		this.app.vault.on("create", async (file) => {
 			if (!layout_ready) {
+				return;
+			}
+
+			if(isSyncProcess) {
 				return;
 			}
 
@@ -156,7 +168,7 @@ export default class WikiDocsPlugin extends Plugin {
 
 	async onunload() {
 	}
-	
+
 	async syncFromServer(folder: TFolder) {
 		const folderName = folder.name;
 	
