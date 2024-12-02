@@ -190,7 +190,7 @@ export async function addFrontMatterToFile(file: TFile) {
         const metadata = new PageMetadata({
             id: -1,
             subject: sanitizeFileName(file.basename),
-            last_synced: now,
+            last_synced: '',
             book_id: bookId,
             parent_id: parentId,
         });
