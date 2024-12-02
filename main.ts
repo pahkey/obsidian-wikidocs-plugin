@@ -111,6 +111,9 @@ export default class WikiDocsPlugin extends Plugin {
 				if (content.trim() === "") {  // 신규파일
 					await addFrontMatterToFile(file); // Front Matter 추가
 				}else { // 기존 파일 (syncFromServer로 생성된 파일 이벤트 + duplicate 이벤트)
+					if (file.name === 'metadata.md') {
+						return;
+					}
 					const metadata = await extractMetadataFromFrontMatter(file);
 					if (metadata.last_synced) {
 						const now = new Date();
