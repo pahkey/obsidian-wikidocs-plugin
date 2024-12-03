@@ -303,3 +303,39 @@ export async function isNeedSync(app:App, folder:TFolder) {
         return false;
     }
 }
+
+
+export async function addLockIconToFile(file: TFile) {
+    // 메타데이터 읽기
+    const metadata = this.app.metadataCache.getFileCache(file);
+    if (metadata?.frontmatter?.open_yn === "N") {
+        console.log('bingo:', file.path);
+        // 파일 탐색기에서 해당 파일에 자물쇠 아이콘 추가
+        const explorerLeaf = document.querySelector(
+            `.nav-file-title[data-path="${file.path}"]`
+        );
+        console.log(explorerLeaf);
+        if (explorerLeaf) {
+            // 이미 아이콘이 추가된 경우 중복 추가 방지
+            const existingIcon = explorerLeaf.querySelector(".lock-icon");
+            if (!existingIcon) {
+                const lockIcon = document.createElement("span");
+                lockIcon.className = "lock-icon";
+                lockIcon.textContent = "🔒";
+                lockIcon.style.marginLeft = "8px"; // 적절한 간격 추가
+                explorerLeaf.appendChild(lockIcon);
+            }
+        }
+    } else {
+        // open_yn이 "Y" 또는 없는 경우 아이콘 제거
+        const explorerLeaf = document.querySelector(
+            `.nav-file-title[data-path="${file.path}"]`
+        );
+        if (explorerLeaf) {
+            const existingIcon = explorerLeaf.querySelector(".lock-icon");
+            if (existingIcon) {
+                existingIcon.remove();
+            }
+        }
+    }
+}

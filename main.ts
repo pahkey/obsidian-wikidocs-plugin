@@ -21,6 +21,7 @@ import {
 
 import {
 	addFrontMatterToFile,
+	addLockIconToFile,
 	extractMetadataFromFrontMatter,
 	getBookIdFromMetadata,
 	getPureContent,
@@ -32,7 +33,28 @@ export default class WikiDocsPlugin extends Plugin {
 	settings: WikiDocsPluginSettings;
 	apiClient: ApiClient;
 
+	updateFileIcons() {
+		const files = this.app.vault.getFiles();
+		for (const file of files) {
+			const fileElement = document.querySelector(`.nav-file-title[data-path="${file.path}"]`);
+			if (fileElement && !fileElement.querySelector(".lock-icon")) {
+				addLockIconToFile(file);
+			}
+		}
+	}
+
 	async onload() {
+
+		this.registerEvent(
+			this.app.workspace.on("layout-change", () => {
+				const explorer = document.querySelector(".workspace-leaf-content .nav-files-container");
+				if (explorer) {
+					console.log("File Explorer detected. Adding lock icons.");
+					this.updateFileIcons(); // 필요할 때만 실행
+				}
+			})
+		);
+		
 		await this.loadSettings();
 		this.apiClient = new ApiClient(this.settings);
 		let isSyncProcess = false;
@@ -110,6 +132,7 @@ export default class WikiDocsPlugin extends Plugin {
 				}
 			})
 		);
+		
 		
 		this.app.workspace.onLayoutReady(() => {
 			layout_ready = true;
