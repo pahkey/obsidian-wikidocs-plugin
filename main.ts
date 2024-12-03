@@ -21,6 +21,7 @@ import {
 
 import {
 	addFrontMatterToFile,
+	addLockIconToFile,
 	extractMetadataFromFrontMatter,
 	getBookIdFromMetadata,
 	getPureContent,
@@ -173,6 +174,14 @@ export default class WikiDocsPlugin extends Plugin {
 							}
 						}
 					}
+				}
+			})
+		);
+
+		this.registerEvent(
+			this.app.workspace.on("file-open", (file) => {
+				if (file instanceof TFile) {
+					addLockIconToFile(file);
 				}
 			})
 		);
@@ -396,3 +405,4 @@ class WikiDocsPluginSettingTab extends PluginSettingTab {
 			});
 	}
 }
+

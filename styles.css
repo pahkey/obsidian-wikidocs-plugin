@@ -66,3 +66,10 @@ div.tree-item-self[data-path$="/metadata.md"] {
 	border-color: #007bff; /* 포커스 시 테두리 색상 */
 	box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* 포커스 시 외곽선 효과 */
 }
+
+
+.lock-icon::before {
+    content: "🔒"; /* 자물쇠 이모지 */
+    margin-left: 4px; /* 텍스트와 간격 */
+    font-size: 1em; /* 아이콘 크기 */
+}
