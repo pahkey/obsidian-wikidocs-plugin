@@ -115,39 +115,41 @@ export default class WikiDocsPlugin extends Plugin {
 			layout_ready = true;
 		});
 		
-		this.app.vault.on("create", async (file) => {
-			if (!layout_ready) {
-				return;
-			}
+		this.registerEvent(
+			this.app.vault.on("create", async (file) => {
+				if (!layout_ready) {
+					return;
+				}
 
-			if(isSyncProcess) {
-				return;
-			}
+				if(isSyncProcess) {
+					return;
+				}
 
-			if (file instanceof TFile && file.extension === "md") {
-				const content = await this.app.vault.read(file);
-				if (content.trim() === "") {  // 신규파일
-					await addFrontMatterToFile(file); // Front Matter 추가
-				}else { // 기존 파일 (syncFromServer로 생성된 파일 이벤트 + duplicate 이벤트)
-					if (file.name === 'metadata.md') {
-						return;
-					}
-					const metadata = await extractMetadataFromFrontMatter(file);
-					if (metadata.last_synced) {
-						const now = new Date();
-						const lastSyncedDate = new Date(metadata.last_synced);
-						const timeDifferenceInSeconds = Math.floor((now.getTime() - lastSyncedDate.getTime()) / 1000);
-						if (timeDifferenceInSeconds > 1) { // 파일 생성시간과 현재 시간이 1초 이상 차이날 경우 duplicate 파일임
-							metadata.id = -1; // 신규 파일로
-							metadata.last_synced = ''; // 동기화를 위해 비워둔다.
-							const frontMatter = metadata.getFrontMatter();
-							const updatedContent = frontMatter + getPureContent(content);
-							await this.app.vault.modify(file, updatedContent);
+				if (file instanceof TFile && file.extension === "md") {
+					const content = await this.app.vault.read(file);
+					if (content.trim() === "") {  // 신규파일
+						await addFrontMatterToFile(file); // Front Matter 추가
+					}else { // 기존 파일 (syncFromServer로 생성된 파일 이벤트 + duplicate 이벤트)
+						if (file.name === 'metadata.md') {
+							return;
+						}
+						const metadata = await extractMetadataFromFrontMatter(file);
+						if (metadata.last_synced) {
+							const now = new Date();
+							const lastSyncedDate = new Date(metadata.last_synced);
+							const timeDifferenceInSeconds = Math.floor((now.getTime() - lastSyncedDate.getTime()) / 1000);
+							if (timeDifferenceInSeconds > 1) { // 파일 생성시간과 현재 시간이 1초 이상 차이날 경우 duplicate 파일임
+								metadata.id = -1; // 신규 파일로
+								metadata.last_synced = ''; // 동기화를 위해 비워둔다.
+								const frontMatter = metadata.getFrontMatter();
+								const updatedContent = frontMatter + getPureContent(content);
+								await this.app.vault.modify(file, updatedContent);
+							}
 						}
 					}
 				}
-			}
-		})
+			})
+		);
 
 		this.registerEvent(
 			this.app.vault.on("rename", async (file, oldPath) => {
