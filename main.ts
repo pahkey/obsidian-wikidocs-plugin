@@ -24,6 +24,7 @@ import {
 	extractMetadataFromFrontMatter,
 	getBookIdFromMetadata,
 	getPureContent,
+	isNeedSync,
 	savePagesToMarkdown
 } from "./lib/md";
 
@@ -75,17 +76,22 @@ export default class WikiDocsPlugin extends Plugin {
 							item.setTitle("위키독스 내려받기")
 								.setIcon("cloud-download")
 								.onClick(async () => {
-									const confirmed = await showConfirmationDialog(
-										"[주의] 이 책이 위키독스 기준으로 업데이트됩니다.\n" +
-										"'위키독스 보내기'로 수정한 데이터를 전송했는지 확인해 주세요.\n" +
-										"정말로 내려받으시겠습니까?"
-									);
-									if (confirmed) {
+									const is_need_sync = await isNeedSync(this.app, file)
+									if (is_need_sync) {
+										const confirmed = await showConfirmationDialog(
+											"[주의!!] 변경된 페이지가 있습니다. \n" +
+											"변경된 페이지를 먼저 '위키독스 보내기'로 전송해 주세요.\n" +
+											"무시하고 내려받으시겠습니까?"
+										);
+										if (confirmed) {
+											isSyncProcess = true;
+											await this.syncFromServer(file);
+											isSyncProcess = false;
+										}
+									}else {
 										isSyncProcess = true;
 										await this.syncFromServer(file);
 										isSyncProcess = false;
-									} else {
-										// new Notice("동작이 취소되었습니다.");
 									}
 								});
 						});

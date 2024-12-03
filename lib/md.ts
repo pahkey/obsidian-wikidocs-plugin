@@ -2,6 +2,8 @@ import { App, TFile, TFolder } from "obsidian";
 
 import {
     ensureFolderExists,
+    extractTitleFromFilePath,
+    getFileModifiedTime,
     readTopLevelMetadata,
     sanitizeFileName,
 } from "./utils";
@@ -260,5 +262,44 @@ export async function savePagesToMarkdown(app:App, pages: any[], folderPath: str
         } catch (error) {
             console.error(`Failed to save page: ${page.subject}`, error);
         }
+    }
+}
+
+
+export async function isNeedSync(app:App, folder:TFolder) {
+    const files = this.app.vault.getFiles().filter((file: { path: string; }) => file.path.startsWith(folder.path));
+
+    let changedCount = 0;
+    for (const file of files) {
+        if (file.name === "metadata.md") {
+            continue;
+        }
+
+        const fileContent = await this.app.vault.read(file);
+        const metadata = await extractMetadataFromFrontMatter(file);
+
+        if (!metadata.id) {
+            console.error(`No ID found in Front Matter for file: ${file.path}`);
+            continue;
+        }
+
+        // 동기화 시점 확인
+        const lastSynced = metadata.last_synced ? new Date(metadata.last_synced) : null;
+        const fileModifiedAt = getFileModifiedTime(file);
+
+        const needsSync =
+            !lastSynced || 
+            fileModifiedAt.getTime() - lastSynced.getTime() > 1000 || // 수정 시간 비교
+            sanitizeFileName(metadata.subject) !== sanitizeFileName(extractTitleFromFilePath(file.path)); // 제목 변경 감지
+
+        if (needsSync) {
+            changedCount++;
+        }
+    }
+    
+    if(changedCount > 0) {
+        return true;
+    }else {
+        return false;
     }
 }
