@@ -151,21 +151,28 @@ export default class WikiDocsPlugin extends Plugin {
 			})
 		);
 
+		const recentRenamedFolderPaths = new Set<string>();
 		this.registerEvent(
 			this.app.vault.on("rename", async (file, oldPath) => {
 				if (file instanceof TFolder) {
 					new Notice("폴더명 변경은 위키독스에 반영되지 않습니다.");
-					return;
-				}
-
-				const oldPathBasename = oldPath.split("/").pop();
-				if (file instanceof TFile && file.name === oldPathBasename) {
-					new Notice("폴더 이동은 위키독스에 반영되지 않습니다.");
-					return;
-				}
-				
-				if (file instanceof TFile && file.name !== oldPathBasename && file.extension === "md" && file.name !== "metadata.md") {
-					addFrontMatterToFile(file);
+					recentRenamedFolderPaths.add(file.path);
+					setTimeout(() => {
+						recentRenamedFolderPaths.delete(file.path)
+					}, 1000); // some reasonable timeout
+				} else {
+					if (file instanceof TFile && file.parent) {
+						if (recentRenamedFolderPaths.has(file.parent.path)) {
+							// after renamed folder
+							// do nothing
+							return;
+						} else {
+							// after drag-and-drop
+							if (file.extension === "md" && file.name !== "metadata.md") {
+								addFrontMatterToFile(file);
+							}
+						}
+					}
 				}
 			})
 		);
