@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-wikidocs-plugin",
-	"version": "1.0.13",
+	"version": "1.0.14",
 	"description": "This is a wikidocs plugin for Obsidian (https://obsidian.md)",
 	"main": "main.js",
 	"scripts": {
