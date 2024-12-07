@@ -1,8 +1,8 @@
-import { Modal, TAbstractFile, TFile, TFolder } from "obsidian";
-
+import { Modal, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 
 export function sanitizeFileName(fileName: string): string {
-	return fileName.replace(/[\\/:*?"<>|]/g, "");
+    // Obsidian의 normalizePath로 경로를 표준화하고 불필요한 문자를 제거
+    return normalizePath(fileName);
 }
 
 export function removeFrontMatter(content: string): string {
@@ -38,35 +38,32 @@ export async function readTopLevelMetadata(fileOrFolder: TAbstractFile): Promise
             const metadataFilePath = `${current.path}/metadata.md`;
             const metadataFile = this.app.vault.getAbstractFileByPath(metadataFilePath);
 
-            if (metadataFile && metadataFile instanceof TFile) {
-                try {
-                    const content = await this.app.vault.read(metadataFile);
+            if (metadataFile instanceof TFile) {
+                // MetadataCache에서 Front Matter 데이터 가져오기
+                const fileCache = this.app.metadataCache.getFileCache(metadataFile);
+
+                if (fileCache?.frontmatter) {
                     const metadata: Record<string, string | number> = {};
 
-                    // Parse Front Matter-style metadata
-                    const frontMatterMatch = content.match(/---([\s\S]*?)---/);
-                    if (frontMatterMatch) {
-                        const frontMatterContent = frontMatterMatch[1];
-                        frontMatterContent.split("\n").forEach((line: string) => {
-							const [key, value] = line.split(":").map((part) => part.trim());
-							if (key && value) {
-								metadata[key] = isNaN(Number(value)) ? value : Number(value); // 숫자 변환 가능하면 숫자로 저장
-							}
-						});
-						
-                        return metadata; // 메타데이터 반환
+                    // frontmatter 객체를 순회하며 메타데이터 추출
+                    for (const [key, value] of Object.entries(fileCache.frontmatter)) {
+                        // 값이 string 또는 number인지 확인
+                        if (typeof value === "string" || typeof value === "number") {
+                            metadata[key] = value;
+                        }
                     }
-                } catch (error) {
-                    console.error(`Failed to read metadata.md in folder: ${current.path}`, error);
+
+                    return metadata; // 메타데이터 반환
                 }
             }
         }
         current = current.parent;
     }
 
-    // console.warn("No metadata.md found in any parent folder.");
-    return null; // 메타데이터를 찾을 수 없으면 null 반환
+    // 메타데이터를 찾을 수 없으면 null 반환
+    return null;
 }
+
 
 export async function deleteFolderContents(folder: TFolder): Promise<void> {
     const abstractFiles = [...folder.children]; // 자식 파일 및 폴더 가져오기
@@ -88,26 +85,25 @@ export async function ensureFolderExists(folderPath: string): Promise<void> {
     }
 }
 
-/**
- * Extract embedded images from the content.
- */
-export function extractEmbeddedImages(content: string): TFile[] {
-    const imageRegex = /!\[.*?\]\((.+?)\)/g;
-    const matches = content.matchAll(imageRegex);
+export function extractEmbeddedImages(file: TFile): TFile[] {
+    const fileCache = this.app.metadataCache.getFileCache(file);
+
+    if (!fileCache?.embeds) {
+        return [];
+    }
 
     const imageFiles: TFile[] = [];
-    for (const match of matches) {
-        const rawPath = match[1];
-        const decodedPath = decodeURIComponent(rawPath);
+    for (const embed of fileCache.embeds) {
+        const decodedPath = decodeURIComponent(embed.link);
         const imageFile = this.app.vault.getAbstractFileByPath(decodedPath);
 
         if (imageFile instanceof TFile && imageFile.extension.match(/jpg|jpeg|png|gif/)) {
             imageFiles.push(imageFile);
         }
     }
-
     return imageFiles;
 }
+
 
 export async function showConfirmationDialog(message: string): Promise<boolean> {
     return new Promise((resolve) => {

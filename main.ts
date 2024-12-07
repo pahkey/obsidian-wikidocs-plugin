@@ -269,7 +269,7 @@ export default class WikiDocsPlugin extends Plugin {
 					const contentWithoutFrontMatter = removeFrontMatter(fileContent);
 	
 					// 이미지 파일 처리
-					const embeddedImages = extractEmbeddedImages(contentWithoutFrontMatter);
+					const embeddedImages = extractEmbeddedImages(file);
 					if (metadata.id != -1) { // 신규 파일이 아닌 경우에만 이미지 업로드
 						await this.apiClient.uploadImagesForPage(this.app, metadata.id, embeddedImages);
 					}
@@ -369,8 +369,6 @@ class WikiDocsPluginSettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-
-		containerEl.createEl("h2", { text: "플러그인 설정" });
 
 		new Setting(containerEl)
 			.setName("API Base URL")

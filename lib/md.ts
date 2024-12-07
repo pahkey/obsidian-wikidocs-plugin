@@ -33,36 +33,19 @@ export class PageMetadata {
         this.open_yn = data.open_yn;
     }
 
-    // Front Matter를 파싱하여 객체 생성
-    static fromFrontMatter(frontMatter: string): PageMetadata {
-        const metadata: { [key: string]: string | number | undefined } = {};
-
-        const lines = frontMatter.split("\n");
-        for (const line of lines) {
-            const colonIndex = line.indexOf(":");
-            if (colonIndex !== -1) {
-                const key = line.slice(0, colonIndex).trim();
-                const value = line.slice(colonIndex + 1).trim();
-                metadata[key] = isNaN(Number(value)) ? value : Number(value);
-            }
-        }
-
-        if (!metadata.id || !metadata.subject) {
+    // MetadataCache에서 제공된 frontmatter 객체를 처리
+    static fromFrontMatter(frontMatter: Record<string, any>): PageMetadata {
+        if (!frontMatter.id || !frontMatter.subject) {
             throw new Error("Front Matter must contain 'id' and 'subject'.");
         }
-
-        if (metadata.parent_id && typeof metadata.parent_id === "string") {
-            metadata.parent_id = metadata.parent_id.replace(/^"|"$/g, "");
-            metadata.parent_id = parseInt(metadata.parent_id);
-        }
-
+        
         return new PageMetadata({
-            id: metadata.id as number,
-            subject: metadata.subject as string,
-            last_synced: metadata.last_synced as string,
-            book_id: metadata.book_id as number,
-            parent_id: metadata.parent_id as number,
-            open_yn: metadata.open_yn as string,
+            id: frontMatter.id,
+            subject: frontMatter.subject,
+            last_synced: frontMatter.last_synced,
+            book_id: frontMatter.book_id,
+            parent_id: frontMatter.parent_id,
+            open_yn: frontMatter.open_yn,
         });
     }
 
@@ -166,6 +149,7 @@ export function getPureContent(content: string): string {
     return content.trim();
 }
 
+
 export async function addFrontMatterToFile(file: TFile) {
     const now = new Date().toISOString();
 
@@ -178,56 +162,52 @@ export async function addFrontMatterToFile(file: TFile) {
     }
 
     const parentId = await getParentId(file);
-    const content = await this.app.vault.read(file);
-    const frontMatterMatch = content.match(/^---[\s\S]*?---\n/);
+    // processFrontMatter를 사용하여 파일의 Front Matter 수정 또는 추가
+    await this.app.fileManager.processFrontMatter(file, (frontMatter: Record<string, unknown>) => {
+        if (!frontMatter) {
+            // Front Matter가 없는 경우 새로 추가
+            frontMatter = {};
+        }
 
-    let updatedContent;
-    if (frontMatterMatch) { // 기존에 있는 파일
-        const metadata = await extractMetadataFromFrontMatter(file);
-        metadata.parent_id = parentId;
-        metadata.last_synced = ''; // 동기화를 위해 비워둔다.
-        const frontMatter = metadata.getFrontMatter();
-        updatedContent = frontMatter + getPureContent(content);
-    }else { // 신규 생성
-        const metadata = new PageMetadata({
-            id: -1,
-            subject: sanitizeFileName(file.basename),
-            last_synced: '',
-            book_id: bookId,
-            parent_id: parentId,
-        });
-        const frontMatter = metadata.getFrontMatter();
-        updatedContent = frontMatter + content;
-    }
-
-    await this.app.vault.modify(file, updatedContent);
+        // 필요한 값 추가 또는 업데이트
+        frontMatter["id"] = frontMatter["id"] || -1;
+        frontMatter["subject"] = frontMatter["subject"] || sanitizeFileName(file.basename);
+        frontMatter["last_synced"] = ''; // 동기화를 위해 비워둔다.
+        frontMatter["book_id"] = bookId;
+        frontMatter["parent_id"] = parentId;
+    });
 }
+
 
 export async function getBookIdFromMetadata(folderPath: string): Promise<number | null> {
     const metadataPath = `${folderPath}/metadata.md`;
     const file = this.app.vault.getAbstractFileByPath(metadataPath);
 
     if (file instanceof TFile) {
-        const content = await this.app.vault.read(file);
-        const match = content.match(/id:\s*(\d+)/);
-        if (match) {
-            return parseInt(match[1], 10);
+        const fileCache = this.app.metadataCache.getFileCache(file);
+        // Check if the file has frontmatter
+        if (fileCache?.frontmatter && fileCache.frontmatter.id) {
+            return parseInt(fileCache.frontmatter.id, 10);
         }
     }
 
     return null;
 }
 
+
 export async function extractMetadataFromFrontMatter(file: TFile): 
         Promise<PageMetadata> {
-    const content = await this.app.vault.read(file);
-    const frontMatterMatch = content.match(/---([\s\S]*?)---/);
-    if (frontMatterMatch) {
-        return PageMetadata.fromFrontMatter(frontMatterMatch[1]);
+    // Access the metadata cache
+    const fileCache = this.app.metadataCache.getFileCache(file);
+
+    // Check if frontMatter exists in the cache
+    if (fileCache?.frontmatter) {
+        return PageMetadata.fromFrontMatter(fileCache.frontmatter);
     } else {
         throw new Error(`No Front Matter found in file: ${file.path}`);
     }
 }
+
 
 export async function savePagesToMarkdown(app:App, pages: any[], folderPath: string) {
     for (const page of pages) {
