@@ -31,6 +31,10 @@ export class PageMetadata {
         this.book_id = data.book_id;
         this.parent_id = data.parent_id;
         this.open_yn = data.open_yn;
+
+        if (this.subject.includes("#")) {
+            this.subject = `"${this.subject}"`; // 따옴표로 감싸기
+        }
     }
 
     // MetadataCache에서 제공된 frontmatter 객체를 처리
