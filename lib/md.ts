@@ -122,23 +122,22 @@ async function getParentId(file: TFile) {
         return -1;
     }
 
-    const content = await file.vault.read(abstractFile);
-    const frontMatterMatch = content.match(/---[\s\S]*?---/);
-    if (!frontMatterMatch) {
+    // 3. MetadataCache를 사용하여 FrontMatter에서 id 가져오기
+    const fileCache = this.app.metadataCache.getFileCache(abstractFile);
+    if (!fileCache || !fileCache.frontmatter) {
         // console.warn(`No FrontMatter found in the file: ${potentialFilePath}`);
         return -1;
     }
 
-    const frontMatterContent = frontMatterMatch[0];
-    const idMatch = frontMatterContent.match(/id:\s*(\d+)/);
-    if (!idMatch) {
+    const frontMatter = fileCache.frontmatter;
+    if (!frontMatter.id || typeof frontMatter.id !== "number") {
         // console.warn(`No 'id' field found in FrontMatter of the file: ${potentialFilePath}`);
         return -1;
     }
 
-    const parentFileId = parseInt(idMatch[1], 10);
-    return parentFileId;
+    return frontMatter.id;
 }
+
 
 export function getPureContent(content: string): string {
     // Front Matter 감지 (---로 시작하고 끝나는 블록)

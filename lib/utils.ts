@@ -85,6 +85,7 @@ export async function ensureFolderExists(folderPath: string): Promise<void> {
     }
 }
 
+
 export function extractEmbeddedImages(file: TFile): TFile[] {
     const fileCache = this.app.metadataCache.getFileCache(file);
 
@@ -95,7 +96,7 @@ export function extractEmbeddedImages(file: TFile): TFile[] {
     const imageFiles: TFile[] = [];
     for (const embed of fileCache.embeds) {
         const decodedPath = decodeURIComponent(embed.link);
-        const imageFile = this.app.vault.getAbstractFileByPath(decodedPath);
+        const imageFile = this.app.metadataCache.getFirstLinkpathDest(decodedPath, file.path);
 
         if (imageFile instanceof TFile && imageFile.extension.match(/jpg|jpeg|png|gif/)) {
             imageFiles.push(imageFile);
