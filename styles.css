@@ -43,6 +43,30 @@ div.tree-item-self[data-path$="/metadata.md"] {
     background-color: #f0f0f0;
 }
 
+/* dark mode */
+body.theme-dark .book-selection-header {
+    color: #ddd;
+}
+
+body.theme-dark .book-selection-list {
+    border: 1px solid #444;
+    background-color: #2a2a2a;
+    box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+}
+
+body.theme-dark .book-selection-list-item {
+    border-bottom: 1px solid #555;
+    color: #ddd;
+}
+
+body.theme-dark .book-selection-list-item:hover {
+    background-color: #3a3a3a;
+}
+
+body.theme-dark .book-selection-empty-message {
+    color: #bbb;
+}
+
 /* Empty message styling */
 .book-selection-empty-message {
     padding: 10px 15px;
