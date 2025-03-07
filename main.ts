@@ -134,6 +134,7 @@ export default class WikiDocsPlugin extends Plugin {
 						if (file.name === 'metadata.md') {
 							return;
 						}
+						await new Promise(resolve => setTimeout(resolve, 100));
 						const metadata = await extractMetadataFromFrontMatter(file);
 						if (metadata.last_synced) {
 							const now = new Date();
