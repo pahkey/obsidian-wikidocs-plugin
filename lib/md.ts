@@ -322,6 +322,7 @@ export async function addLockIconToFile(file: TFile) {
 
 export async function addBlogIconToFolder(folderPath:any) {
 
+    /*
     setTimeout(() => {
         const explorerLeaf = document.querySelector(
             `.nav-folder-title[data-path="${folderPath}"]`
@@ -339,10 +340,12 @@ export async function addBlogIconToFolder(folderPath:any) {
             }
         }
     }, 500); // 500ms 딜레이 추가
+    */
 }
 
 export async function addBlogIconToFile(folderPath:any, blog:any) {
 
+    /*
     setTimeout(() => {
 
         console.log(`folderPath:${folderPath}, is_public:${blog.is_public}`);
@@ -374,6 +377,7 @@ export async function addBlogIconToFile(folderPath:any, blog:any) {
             }
         }
     }, 500); // 500ms 딜레이 추가
+    */
 }
 
 // blog
