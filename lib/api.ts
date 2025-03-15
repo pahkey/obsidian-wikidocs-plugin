@@ -91,6 +91,34 @@ export class ApiClient {
 		return imageMap;
 	}
 
+	/**
+	 * Upload images to the server for the given page ID.
+	 */
+	async uploadImagesForBlog(app: App, blogId: number, imageFiles: TFile[]): Promise<Record<string, string>> {
+		const imageMap: Record<string, string> = {};
+	
+		for (const file of imageFiles) {
+			const arrayBuffer = await app.vault.readBinary(file);
+			const formData = new FormData();
+			formData.append("file", new Blob([arrayBuffer]), file.name);
+			formData.append("blog_id", blogId.toString());
+	
+			const response = await this.fetchWithAuth(`/blog/images/upload/`, {
+				method: "POST",
+				body: formData,
+			});
+	
+			if (!response.ok) {
+				throw new Error(`Failed to upload image: ${file.name}`);
+			}
+	
+			const data = await response.json();
+			imageMap[file.path] = data.url; // 서버에서 받은 URL 매핑
+		}
+	
+		return imageMap;
+	}
+
 	async downloadBook(app:App, bookId: number) {
 		const response = await this.fetchWithAuth(`/books/${bookId}/`);
 		if (!response.ok) {

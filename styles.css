@@ -1,8 +1,15 @@
+/*
 .metadata-container {
     display: none !important;
 }
 
 div.tree-item-self[data-path$="/metadata.md"] {
+    display: none !important;
+}
+*/
+
+.tree-item-self[data-path$="metadata.md"],
+.tree-item-self[data-path$="blog_metadata.md"] {
     display: none !important;
 }
 

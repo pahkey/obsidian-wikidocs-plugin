@@ -138,3 +138,36 @@ export async function showConfirmationDialog(message: string): Promise<boolean> 
         modal.open();
     });
 }
+
+
+export async function isBookFolder(fileOrFolder: TAbstractFile): Promise<boolean> {
+    let current: TAbstractFile | null = fileOrFolder;
+    while (current && current.parent) {
+        if (current instanceof TFolder) {
+            const metadataFilePath = `${current.path}/metadata.md`;
+            const metadataFile = this.app.vault.getAbstractFileByPath(metadataFilePath);
+
+            if (metadataFile instanceof TFile) {
+                return true;
+            }
+        }
+        current = current.parent;
+    }
+    return false;
+}
+
+export async function isBlogFolder(fileOrFolder: TAbstractFile): Promise<boolean> {
+    let current: TAbstractFile | null = fileOrFolder;
+    while (current && current.parent) {
+        if (current instanceof TFolder) {
+            const metadataFilePath = `${current.path}/blog_metadata.md`;
+            const metadataFile = this.app.vault.getAbstractFileByPath(metadataFilePath);
+
+            if (metadataFile instanceof TFile) {
+                return true;
+            }
+        }
+        current = current.parent;
+    }
+    return false;
+}

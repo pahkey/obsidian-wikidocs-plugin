@@ -318,3 +318,179 @@ export async function addLockIconToFile(file: TFile) {
         }
     }
 }
+
+
+export async function addBlogIconToFolder(folderPath:any) {
+
+    setTimeout(() => {
+        const explorerLeaf = document.querySelector(
+            `.nav-folder-title[data-path="${folderPath}"]`
+        );
+        
+        if (explorerLeaf) {
+            // 이미 아이콘이 추가된 경우 중복 추가 방지
+            const existingIcon = explorerLeaf.querySelector(".blog-icon");
+            if (!existingIcon) {
+                const blogIcon = document.createElement("span");
+                blogIcon.className = "blog-icon";
+                blogIcon.textContent = "📝"; // 블로그 아이콘 (이모지 또는 아이콘 라이브러리 활용 가능)
+                blogIcon.style.marginRight = "5px"; // 아이콘과 글씨 사이 여백 추가
+                explorerLeaf.prepend(blogIcon); // 폴더명 앞에 아이콘 추가
+            }
+        }
+    }, 500); // 500ms 딜레이 추가
+}
+
+export async function addBlogIconToFile(folderPath:any, blog:any) {
+
+    setTimeout(() => {
+
+        console.log(`folderPath:${folderPath}, is_public:${blog.is_public}`);
+
+        const explorerLeaf = document.querySelector(
+            `.nav-file-title[data-path="${folderPath}"]`
+        );
+
+        if (explorerLeaf) {
+            // 이미 아이콘이 추가된 경우 중복 추가 방지
+            const existingIcon = explorerLeaf.querySelector(".blog-icon");
+            if (!existingIcon) {
+                const blogIcon = document.createElement("span");
+                blogIcon.className = "blog-icon";
+                if (blog.is_public) {
+                    blogIcon.textContent = "🌐"; // 블로그 아이콘 (이모지 또는 아이콘 라이브러리 활용 가능)
+                }else {
+                    blogIcon.textContent = "🔒"; // 블로그 아이콘 (이모지 또는 아이콘 라이브러리 활용 가능)
+                }
+                blogIcon.style.marginRight = "5px"; // 아이콘과 글씨 사이 여백 추가
+                explorerLeaf.prepend(blogIcon); // 폴더명 앞에 아이콘 추가
+            }else {
+                // 아이콘이 이미 있는 경우 상태에 맞게 업데이트
+                if ((existingIcon.textContent === "🌐" && !blog.is_public) || 
+                    (existingIcon.textContent === "🔒" && blog.is_public)) {
+                    // 현재 상태와 다른 경우에만 아이콘 업데이트
+                    existingIcon.textContent = blog.is_public ? "🌐" : "🔒";
+                }
+            }
+        }
+    }, 500); // 500ms 딜레이 추가
+}
+
+// blog
+export class BlogMetadata {
+    id: number;
+    tags: any;
+    is_public: boolean;
+    last_synced?: string;
+    
+    constructor(data: {
+        id: number;
+        tags: string;
+        is_public: boolean;
+        last_synced?: string;
+    }) {
+        this.id = data.id;
+
+        // console.log(data.tags)
+
+        if(data.tags) {
+            this.tags = data.tags;
+        }else {
+            this.tags = [];
+        }
+
+        // this.tags = data.tags;
+        this.is_public = data.is_public;
+        this.last_synced = data.last_synced;
+    }
+
+    // MetadataCache에서 제공된 frontmatter 객체를 처리
+    static fromFrontMatter(frontMatter: Record<string, any>): BlogMetadata {
+        if (!frontMatter.id) {
+            throw new Error("Front Matter must contain 'id'.");
+        }
+        
+        return new BlogMetadata({
+            id: frontMatter.id,
+            tags: frontMatter.tags,
+            is_public: frontMatter.is_public,
+            last_synced: frontMatter.last_synced,
+        });
+    }
+
+    getFrontMatter(): string {
+        const frontMatter = `---\n` +
+            `id: ${this.id}\n` +
+            `tags: ${this.tags}\n` +
+            `is_public: ${this.is_public}\n` +
+            `last_synced: ${this.last_synced}\n` +
+            `---\n`;
+        return frontMatter;
+    }
+}
+
+export async function saveBlogToMarkdown(app:App, blog: any, folderPath: string) {
+    const sanitizedFileName = sanitizeFileName(blog.title);
+    const filePath = `${folderPath}/${sanitizedFileName}.md`;
+    
+    try {
+        const now = new Date().toISOString();
+        
+        // Front Matter 생성
+        const metadata = new BlogMetadata(blog);
+        metadata.last_synced = now;
+        const frontMatter = metadata.getFrontMatter();
+
+        // 페이지 내용 추가
+        const content = frontMatter + (blog.content ?? "No content available.");
+
+        // 파일 생성
+        let file = this.app.vault.getAbstractFileByPath(filePath);
+        if (file instanceof TFile) {
+            await this.app.vault.modify(file, content);
+        }else {
+            file = await this.app.vault.create(filePath, content);
+        }
+
+        await addBlogIconToFile(filePath, blog);
+        
+        // 파일열기
+        const leaf = this.app.workspace.getLeaf(false);
+        await leaf.openFile(file);
+
+    } catch (error) {
+        console.error(`Failed to save blog: ${blog.title}`, error);
+    }
+    
+}
+
+
+export async function addBlogFrontMatterToFile(file: TFile) {
+    const now = new Date().toISOString();
+    // processFrontMatter를 사용하여 파일의 Front Matter 수정 또는 추가
+    await this.app.fileManager.processFrontMatter(file, (frontMatter: Record<string, unknown>) => {
+        if (!frontMatter) {
+            // Front Matter가 없는 경우 새로 추가
+            frontMatter = {};
+        }
+
+        // 필요한 값 추가 또는 업데이트
+        frontMatter["id"] = frontMatter["id"] || -1;
+        frontMatter["tags"] = '';
+        frontMatter["is_public"] = true;
+        frontMatter["last_synced"] = ''; // 동기화를 위해 비워둔다.
+    });
+}
+
+export async function extractMetadataFromBlogFrontMatter(file: TFile): 
+        Promise<BlogMetadata> {
+    // Access the metadata cache
+    const fileCache = this.app.metadataCache.getFileCache(file);
+
+    // Check if frontMatter exists in the cache
+    if (fileCache?.frontmatter) {
+        return BlogMetadata.fromFrontMatter(fileCache.frontmatter);
+    } else {
+        throw new Error(`No Front Matter found in file: ${file.path}`);
+    }
+}
