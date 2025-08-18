@@ -344,6 +344,11 @@ export default class WikiDocsPlugin extends Plugin {
 					// metadata.md 파일은 업로드하지 않음
 					continue;
 				}
+
+				// md 파일이 아닌 경우 업로드하지 않음
+				if (file.extension !== "md") {
+					continue;
+				}
 	
 				const fileContent = await this.app.vault.read(file);
 				const metadata = await extractMetadataFromFrontMatter(file);

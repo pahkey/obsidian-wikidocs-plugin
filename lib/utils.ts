@@ -73,6 +73,11 @@ export async function deleteFolderContents(folder: TFolder): Promise<void> {
             // metadata.md는 삭제하지 않음
             continue;
         }
+
+        if (file instanceof TFile && file.extension !== "md") {
+            continue;
+        }
+
         await this.app.fileManager.trashFile(file);
     }
 }

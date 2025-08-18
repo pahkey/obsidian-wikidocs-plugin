@@ -258,6 +258,10 @@ export async function isNeedSync(app:App, folder:TFolder) {
             continue;
         }
 
+        if (file.extension !== "md") {
+            continue;
+        }
+
         const fileContent = await this.app.vault.read(file);
         const metadata = await extractMetadataFromFrontMatter(file);
 
