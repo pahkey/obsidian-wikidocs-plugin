@@ -1,83 +1,83 @@
-# WikiDocs Obsidian Plugin
+위키독스 옵시디언 플러그인은 위키독스 책과 블로그를 더 효율적으로 작성하고 편집할 수 있게 해주는 도구입니다. 이 플러그인을 통해 옵시디언에서 직접 위키독스 콘텐츠를 관리할 수 있습니다.
 
-With the WikiDocs Obsidian Plugin, you can edit WikiDocs books directly within Obsidian.  
+## 관련 링크
 
-* Shortcut to Obsidian: [https://obsidian.md/](https://obsidian.md/)  
+- [옵시디언 공식 웹사이트](https://obsidian.md/)
+- [위키독스 옵시디언 플러그인 소개 블로그](https://wikidocs.net/blog/@pahkey/503/)
+
+## 주요 기능과 장점
+
+### 빠른 작업 속도
+
+- 로컬 PC 환경에서 동작하여 웹 환경보다 빠른 응답 속도
+- 오프라인에서도 작업 가능
+
+### 편리한 문서 편집
+
+- 이미지 드래그 앤 드롭으로 쉽게 첨부
+- 폴더 내 문서 드래그 앤 드롭으로 목차 편집
+- 작성 완료 후 "위키독스 보내기" 기능으로 간편하게 업로드
+
+### 강력한 생산성 도구
+
+- 옵시디언의 다양한 커뮤니티 플러그인 활용 가능
+- 강력한 검색 기능으로 문서 내 키워드 빠른 검색
+
+----
+
+위키독스 옵시디언 플러그인을 설치하면 옵시디언에서 직접 위키독스의 책과 블로그를 편집할 수 있습니다. 이 가이드에서는 플러그인 설치 방법과 초기 설정 방법을 안내합니다.
+
+## 1. 플러그인 설치하기
+
+### 1.1 커뮤니티 플러그인 활성화
+1. 옵시디언 설정 화면에서 "커뮤니티 플러그인 사용"을 클릭하여 활성화합니다.
+
+![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241130123631.png)
+
+### 1.2 WikiDocs 플러그인 설치
+1. "탐색" 버튼을 클릭합니다.
+2. 검색창에 "WikiDocs"를 입력합니다.
+3. 검색된 WikiDocs 플러그인을 선택하여 설치합니다.
+
+![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241130123852.png)
+![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241214093033.png)
+
+### 1.3 플러그인 설정 화면 접근
+
+설치 후 다음 두 가지 방법 중 하나로 설정 화면에 접근할 수 있습니다:
+
+- 설정 화면 좌측 하단의 WikiDocs 항목 클릭
+- 설치된 플러그인의 "옵션" 버튼 클릭
+
+![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241214093559.png)
+
+## 2. 플러그인 사용을 위한 준비
+
+### 2.1 위키독스 API 토큰 발급받기
+1. 위키독스에 로그인합니다.
+2. [계정설정 > API 토큰] 메뉴로 이동합니다.
+3. "보기" 버튼을 클릭하여 API 토큰을 복사합니다.
+
+![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241214093845.png)
+
+### 2.2 플러그인 설정하기
+1. 옵시디언 설정 화면에서 [커뮤니티 플러그인 > WikiDocs] 항목을 선택합니다.
+2. 다음 정보를 입력합니다:
+    - API Base URL: `https://wikidocs.net/napi`
+    - API Token: 복사한 API 토큰을 붙여넣습니다.
+
+![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241214093955.png)
+
+## 3. 설치 확인하기
+
+설치가 완료되면 옵시디언 좌측에 다음과 같은 아이콘들이 추가됩니다:
+
+- 책 모양 아이콘: 위키독스 책 관리
+- 블로그 아이콘: 위키독스 블로그 관리
 
 
-## Installing the Plugin  
-
-The plugin is currently under preparation.  
-Please wait a little longer.  
+![](https://wikidocs.net/images/page/278511/Pasted%20image%2020250317194849.png)
 
 
-## Preparing to Use the Plugin  
-
-Once the WikiDocs plugin is installed in Obsidian, follow these steps:  
-
-### Obtaining a WikiDocs API Token  
-
-An API token is required to use the plugin. This token is necessary for user authentication. You can generate an API token from the following menu:  
-
-[Login > Account Settings > Generate API Token]  
-![](https://wikidocs.net/images/page/267526/iShot_2024-11-28_15.42.32.png)  
-
-Copy the displayed token value.  
-
-### Configuring the Obsidian Plugin  
-
-After installing the plugin, you will see an option called [Community Plugins > WikiDocs Plugin] in the lower-left settings pane of Obsidian.  
-
-![](https://wikidocs.net/images/page/267526/iShot_2024-11-28_15.49.11.png)  
-
-Click on this item and configure the settings as follows:  
-
-- API Base URL: `https://wikidocs.net/napi`  
-- API Token: Paste the token value you copied earlier.  
-
-
-## Viewing WikiDocs Books  
-
-After installing the plugin, a "book icon" will appear at the bottom of the icons on the left side of the Obsidian screen.  
-
-![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241128155407.png)  
-
-Click this icon to open a popup window as shown below:  
-
-![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241128155553.png)  
-
-The books you are currently working on in WikiDocs will be displayed. Select the book you wish to edit. The book will then be downloaded and opened in Obsidian.  
-
-## Sending to WikiDocs  
-
-After editing the book, use the "Send to WikiDocs" feature to update the changes to WikiDocs. Right-click on the "book title" in the Obsidian table of contents to see the "Send to WikiDocs" menu. Note that this menu does not appear when right-clicking on regular page titles.  
-
-![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241128160546.png)  
-
-Selecting "Send to WikiDocs" will apply the changes to WikiDocs.  
-
-## Downloading from WikiDocs  
-
-"Download from WikiDocs" synchronizes Obsidian to match the WikiDocs book exactly. If you haven't sent your edits to WikiDocs using the "Send to WikiDocs" feature, the edited content may be lost, so proceed with caution. (This command ensures that the content in both WikiDocs and Obsidian is fully synchronized based on WikiDocs.)  
-
-![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241128160749.png)  
-
-
-## Limitations  
-
-Here are some features that are available in WikiDocs but not in Obsidian:  
-
-### Page Deletion Is Not Supported  
-
-Deleting a page can inadvertently remove its subpages as well. To prevent accidental deletions and irreversible data loss, page deletions made in Obsidian will not be reflected in WikiDocs. Pages can only be deleted directly in WikiDocs.  
-
-### Parent Page Assignment Is Limited  
-
-WikiDocs organizes the table of contents by assigning parent pages. In Obsidian, pages with existing subpages can be moved, but pages without subpages cannot be moved under another page as a subpage.  
-
-* Advanced features will enable this functionality in the future (details will be announced later).  
-
-### Book Settings Cannot Be Modified  
-
-WikiDocs allows various book settings (e.g., book image, copyright, public/private status, advertisements), but in Obsidian, only the book's content can be edited.  
+이제 위키독스 플러그인을 사용할 준비가 완료되었습니다. 다음 단계로 넘어가시려면 [책 작성하기](https://wikidocs.net/278513) 또는 [블로그 작성하기](https://wikidocs.net/278514) 문서를 참고해 주세요.
 
