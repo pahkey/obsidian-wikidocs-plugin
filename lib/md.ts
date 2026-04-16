@@ -6,6 +6,7 @@ import {
     getFileModifiedTime,
     readTopLevelMetadata,
     sanitizeFileName,
+    toObsidianSafeTitle,
 } from "./utils";
 
 
@@ -73,6 +74,15 @@ export class PageMetadata {
             `---\n`;
         return frontMatter;
     }
+}
+
+export interface PageSyncStatus {
+    needsSync: boolean;
+    reasons: string[];
+    lastSynced: Date | null;
+    fileModifiedAt: Date;
+    fileSubject: string;
+    subjectMatchesFilename: boolean;
 }
 
 
@@ -154,8 +164,6 @@ export function getPureContent(content: string): string {
 
 
 export async function addFrontMatterToFile(file: TFile) {
-    const now = new Date().toISOString();
-
     let bookId = -1; // 기본값
     const metadata = await readTopLevelMetadata(file);
     if (metadata && metadata.id) {
@@ -174,7 +182,7 @@ export async function addFrontMatterToFile(file: TFile) {
 
         // 필요한 값 추가 또는 업데이트
         frontMatter["id"] = frontMatter["id"] || -1;
-        frontMatter["subject"] = frontMatter["subject"] || sanitizeFileName(file.basename);
+        frontMatter["subject"] = frontMatter["subject"] || toObsidianSafeTitle(file.basename);
         frontMatter["last_synced"] = ''; // 동기화를 위해 비워둔다.
         frontMatter["book_id"] = bookId;
         frontMatter["parent_id"] = parentId;
@@ -211,10 +219,78 @@ export async function extractMetadataFromFrontMatter(file: TFile):
     }
 }
 
+export async function tryExtractMetadataFromFrontMatter(file: TFile):
+        Promise<PageMetadata | null> {
+    const fileCache = this.app.metadataCache.getFileCache(file);
+    const frontMatter = fileCache?.frontmatter;
+
+    if (!frontMatter) {
+        return null;
+    }
+
+    if (frontMatter.id == null || frontMatter.subject == null) {
+        return null;
+    }
+
+    return PageMetadata.fromFrontMatter(frontMatter);
+}
+
+export function evaluatePageSyncStatus(file: TFile, metadata: PageMetadata): PageSyncStatus {
+    const reasons: string[] = [];
+    const lastSynced = metadata.last_synced ? new Date(metadata.last_synced) : null;
+    const fileModifiedAt = getFileModifiedTime(file);
+    const fileSubject = extractTitleFromFilePath(file.path);
+    const subjectMatchesFilename =
+        sanitizeFileName(metadata.subject) === sanitizeFileName(fileSubject);
+
+    if (!lastSynced) {
+        reasons.push("missing_last_synced");
+    }
+
+    if (lastSynced && fileModifiedAt.getTime() - lastSynced.getTime() > 1000) {
+        reasons.push("mtime_newer_than_last_synced");
+    }
+
+    if (!subjectMatchesFilename) {
+        reasons.push("subject_filename_mismatch");
+    }
+
+    return {
+        needsSync: reasons.length > 0,
+        reasons,
+        lastSynced,
+        fileModifiedAt,
+        fileSubject,
+        subjectMatchesFilename,
+    };
+}
+
+export async function updatePageFrontMatterAfterSync(
+    file: TFile,
+    metadata: PageMetadata,
+    syncedAt: string
+) {
+    metadata.subject = toObsidianSafeTitle(extractTitleFromFilePath(file.path));
+    metadata.last_synced = syncedAt;
+
+    await this.app.fileManager.processFrontMatter(file, (frontMatter: Record<string, unknown>) => {
+        if (!frontMatter) {
+            frontMatter = {};
+        }
+
+        frontMatter["id"] = metadata.id;
+        frontMatter["subject"] = metadata.subject;
+        frontMatter["book_id"] = metadata.book_id ?? -1;
+        frontMatter["parent_id"] = metadata.parent_id ?? -1;
+        frontMatter["open_yn"] = metadata.open_yn;
+        frontMatter["last_synced"] = metadata.last_synced;
+    });
+}
+
 
 export async function savePagesToMarkdown(app:App, pages: any[], folderPath: string) {
     for (const page of pages) {
-        const sanitizedFileName = sanitizeFileName(page.subject);
+        const sanitizedFileName = toObsidianSafeTitle(page.subject);
         const filePath = `${folderPath}/${sanitizedFileName}.md`;
 
         try {
@@ -222,6 +298,7 @@ export async function savePagesToMarkdown(app:App, pages: any[], folderPath: str
             
             // Front Matter 생성
             const metadata = new PageMetadata(page);
+            metadata.subject = sanitizedFileName;
             metadata.last_synced = now;
             const frontMatter = metadata.getFrontMatter();
 
@@ -262,24 +339,18 @@ export async function isNeedSync(app:App, folder:TFolder) {
             continue;
         }
 
-        const fileContent = await this.app.vault.read(file);
-        const metadata = await extractMetadataFromFrontMatter(file);
+        const metadata = await tryExtractMetadataFromFrontMatter(file);
+        if (!metadata) {
+            continue;
+        }
 
         if (!metadata.id) {
             console.error(`No ID found in Front Matter for file: ${file.path}`);
             continue;
         }
 
-        // 동기화 시점 확인
-        const lastSynced = metadata.last_synced ? new Date(metadata.last_synced) : null;
-        const fileModifiedAt = getFileModifiedTime(file);
-
-        const needsSync =
-            !lastSynced || 
-            fileModifiedAt.getTime() - lastSynced.getTime() > 1000 || // 수정 시간 비교
-            sanitizeFileName(metadata.subject) !== sanitizeFileName(extractTitleFromFilePath(file.path)); // 제목 변경 감지
-
-        if (needsSync) {
+        const syncStatus = evaluatePageSyncStatus(file, metadata);
+        if (syncStatus.needsSync) {
             changedCount++;
         }
     }

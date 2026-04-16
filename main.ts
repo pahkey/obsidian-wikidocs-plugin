@@ -28,13 +28,15 @@ import {
 	addFrontMatterToFile,
 	addLockIconToFile,
 	BlogMetadata,
+	evaluatePageSyncStatus,
 	extractMetadataFromBlogFrontMatter,
-	extractMetadataFromFrontMatter,
 	getBookIdFromMetadata,
 	getPureContent,
 	isNeedSync,
 	saveBlogToMarkdown,
-	savePagesToMarkdown
+	savePagesToMarkdown,
+	tryExtractMetadataFromFrontMatter,
+	updatePageFrontMatterAfterSync
 } from "./lib/md";
 
 export default class WikiDocsPlugin extends Plugin {
@@ -231,7 +233,7 @@ export default class WikiDocsPlugin extends Plugin {
 
 						let metadata;
 						if (await isBookFolder(file)) {
-							metadata = await extractMetadataFromFrontMatter(file);
+							metadata = await tryExtractMetadataFromFrontMatter(file);
 						}
 						
 						if (await isBlogFolder(file)) {
@@ -351,7 +353,10 @@ export default class WikiDocsPlugin extends Plugin {
 				}
 	
 				const fileContent = await this.app.vault.read(file);
-				const metadata = await extractMetadataFromFrontMatter(file);
+				const metadata = await tryExtractMetadataFromFrontMatter(file);
+				if (!metadata) {
+					continue;
+				}
 	
 				if (!metadata.id) {
 					console.error(`No ID found in Front Matter for file: ${file.path}`);
@@ -365,18 +370,12 @@ export default class WikiDocsPlugin extends Plugin {
 				) {
 					metadata.parent_id = -1;
 				}
-	
-				// 동기화 시점 확인
-				const lastSynced = metadata.last_synced ? new Date(metadata.last_synced) : null;
-				const fileModifiedAt = getFileModifiedTime(file);
-	
-				const needsSync =
-					!lastSynced || 
-					fileModifiedAt.getTime() - lastSynced.getTime() > 1000 || // 수정 시간 비교
-					sanitizeFileName(metadata.subject) !== sanitizeFileName(extractTitleFromFilePath(file.path)); // 제목 변경 감지
-	
-				if (needsSync) {
+
+				const syncStatus = evaluatePageSyncStatus(file, metadata);
+
+				if (syncStatus.needsSync) {
 					changedCount++;
+					const wasNewPage = metadata.id === -1;
 	
 					// const contentWithoutFrontMatter = ensureLineBreaks(removeFrontMatter(fileContent));
 					const contentWithoutFrontMatter = removeFrontMatter(fileContent);
@@ -388,7 +387,7 @@ export default class WikiDocsPlugin extends Plugin {
 					}
 	
 					// 서버에 업데이트
-					metadata.subject = extractTitleFromFilePath(file.path);
+					metadata.subject = sanitizeFileName(syncStatus.fileSubject);
 					const page_id = await this.apiClient.updatePageOnServer(metadata, contentWithoutFrontMatter);
 
 					if (metadata.id == -1) { // 신규 파일인 경우에 이미지 업로드후 저장 한번 더!!
@@ -396,6 +395,9 @@ export default class WikiDocsPlugin extends Plugin {
 						await this.apiClient.uploadImagesForPage(this.app, page_id, embeddedImages);
 						await this.apiClient.updatePageOnServer(metadata, contentWithoutFrontMatter);
 					}
+
+					const syncedAt = new Date().toISOString();
+					await updatePageFrontMatterAfterSync(file, metadata, syncedAt);
 
 					new Notice(`${file.name} 페이지를 성공적으로 내보냈습니다!`);
 				}
@@ -657,7 +659,7 @@ export default class WikiDocsPlugin extends Plugin {
 			}
 			
 			// 블로그 보내기
-			const title = extractTitleFromFilePath(file.path);
+			const title = sanitizeFileName(extractTitleFromFilePath(file.path));
 			const content = removeFrontMatter(fileContent);
 			try {
 				metadata.tags = metadata.tags.join(',')
@@ -777,4 +779,3 @@ class WikiDocsPluginSettingTab extends PluginSettingTab {
 			});
 	}
 }
-

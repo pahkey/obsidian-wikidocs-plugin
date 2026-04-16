@@ -1,8 +1,26 @@
 import { Modal, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 
+const OBSIDIAN_UNSAFE_CHAR_MAP: Record<string, string> = {
+    "/": "／",
+    "#": "＃",
+    "^": "＾",
+    "|": "｜",
+    "[": "［",
+    "]": "］",
+    "?": "？",
+    ":": "：",
+    "\\": "＼",
+};
+
+export function toObsidianSafeTitle(title: string): string {
+    const replacedTitle = title.replace(/[\/#^|[\]?:\\]/g, (char) => OBSIDIAN_UNSAFE_CHAR_MAP[char] ?? " ");
+    const normalizedWhitespaceTitle = replacedTitle.replace(/\s+/g, " ").trim();
+    const safeTitle = normalizedWhitespaceTitle || "Untitled";
+    return normalizePath(safeTitle);
+}
+
 export function sanitizeFileName(fileName: string): string {
-    // Obsidian의 normalizePath로 경로를 표준화하고 불필요한 문자를 제거
-    return normalizePath(fileName);
+    return toObsidianSafeTitle(fileName);
 }
 
 export function removeFrontMatter(content: string): string {
