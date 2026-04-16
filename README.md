@@ -32,15 +32,15 @@
 ### 1.1 커뮤니티 플러그인 활성화
 1. 옵시디언 설정 화면에서 "커뮤니티 플러그인 사용"을 클릭하여 활성화합니다.
 
-![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241130123631.png)
+![](https://static.wikidocs.net/images/page/267526/Pasted%20image%2020241130123631.png)
 
 ### 1.2 WikiDocs 플러그인 설치
 1. "탐색" 버튼을 클릭합니다.
 2. 검색창에 "WikiDocs"를 입력합니다.
 3. 검색된 WikiDocs 플러그인을 선택하여 설치합니다.
 
-![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241130123852.png)
-![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241214093033.png)
+![](https://static.wikidocs.net/images/page/267526/Pasted%20image%2020241130123852.png)
+![](https://static.wikidocs.net/images/page/267526/Pasted%20image%2020241214093033.png)
 
 ### 1.3 플러그인 설정 화면 접근
 
@@ -49,7 +49,7 @@
 - 설정 화면 좌측 하단의 WikiDocs 항목 클릭
 - 설치된 플러그인의 "옵션" 버튼 클릭
 
-![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241214093559.png)
+![](https://static.wikidocs.net/images/page/267526/Pasted%20image%2020241214093559.png)
 
 ## 2. 플러그인 사용을 위한 준비
 
@@ -58,7 +58,7 @@
 2. [계정설정 > API 토큰] 메뉴로 이동합니다.
 3. "보기" 버튼을 클릭하여 API 토큰을 복사합니다.
 
-![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241214093845.png)
+![](https://static.wikidocs.net/images/page/267526/Pasted%20image%2020241214093845.png)
 
 ### 2.2 플러그인 설정하기
 1. 옵시디언 설정 화면에서 [커뮤니티 플러그인 > WikiDocs] 항목을 선택합니다.
@@ -66,7 +66,7 @@
     - API Base URL: `https://wikidocs.net/napi`
     - API Token: 복사한 API 토큰을 붙여넣습니다.
 
-![](https://wikidocs.net/images/page/267526/Pasted%20image%2020241214093955.png)
+![](https://static.wikidocs.net/images/page/267526/Pasted%20image%2020241214093955.png)
 
 ## 3. 설치 확인하기
 
@@ -76,7 +76,7 @@
 - 블로그 아이콘: 위키독스 블로그 관리
 
 
-![](https://wikidocs.net/images/page/278511/Pasted%20image%2020250317194849.png)
+![](https://static.wikidocs.net/images/page/278511/Pasted%20image%2020250317194849.png)
 
 
 이제 위키독스 플러그인을 사용할 준비가 완료되었습니다. 다음 단계로 넘어가시려면 [책 작성하기](https://wikidocs.net/278513) 또는 [블로그 작성하기](https://wikidocs.net/278514) 문서를 참고해 주세요.
