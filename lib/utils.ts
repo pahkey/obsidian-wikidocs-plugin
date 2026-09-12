@@ -10,10 +10,14 @@ const OBSIDIAN_UNSAFE_CHAR_MAP: Record<string, string> = {
     "?": "？",
     ":": "：",
     "\\": "＼",
+    "*": "＊",
+    "<": "＜",
+    ">": "＞",
+    "\"": "＂",
 };
 
 export function toObsidianSafeTitle(title: string): string {
-    const replacedTitle = title.replace(/[\/#^|[\]?:\\]/g, (char) => OBSIDIAN_UNSAFE_CHAR_MAP[char] ?? " ");
+    const replacedTitle = title.replace(/[\/#^|[\]?:\\*<>"]/g, (char) => OBSIDIAN_UNSAFE_CHAR_MAP[char] ?? " ");
     const normalizedWhitespaceTitle = replacedTitle.replace(/\s+/g, " ").trim();
     const safeTitle = normalizedWhitespaceTitle || "Untitled";
     return normalizePath(safeTitle);
@@ -40,6 +44,42 @@ export function extractTitleFromFilePath(filePath: string): string {
 
 export function getFileModifiedTime(file: TFile): Date {
     return new Date(file.stat.mtime);
+}
+
+// catch 블록에서 사용자에게 보여줄 오류 메시지를 추출한다.
+export function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+        return error.message;
+    }
+    return String(error);
+}
+
+// 대화상자에 표시할 목록 문자열을 만든다 (너무 길어지지 않도록 일부만 표시).
+const MAX_VISIBLE_LIST_ITEMS = 10;
+
+export function formatList(items: string[]): string {
+    const lines = items
+        .slice(0, MAX_VISIBLE_LIST_ITEMS)
+        .map((item) => `- ${item}`);
+
+    if (items.length > MAX_VISIBLE_LIST_ITEMS) {
+        lines.push(`- ...외 ${items.length - MAX_VISIBLE_LIST_ITEMS}개`);
+    }
+
+    return lines.join("\n");
+}
+
+// 파일 탐색기(또는 그 하위)에 추가된 노드인지 확인한다.
+// 문서 전체를 감시하므로, 에디터 등 다른 영역의 DOM 변경은 여기서 걸러낸다.
+// 탐색기 컨테이너의 클래스명이 버전에 따라 다를 수 있어 두 가지 단서를 모두 확인한다.
+export function isFileExplorerElement(element: HTMLElement): boolean {
+    // 탐색기 안쪽에 추가된 노드 (하위 항목은 조상으로 판별한다)
+    if (element.closest('.nav-files-container, [data-type="file-explorer"]') !== null) {
+        return true;
+    }
+
+    // 탐색기 자체가 통째로 추가/교체되는 경우
+    return element.matches('.nav-files-container, [data-type="file-explorer"]');
 }
 
 export function ensureLineBreaks(content: string): string {

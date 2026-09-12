@@ -4,9 +4,11 @@ import {
 	deleteFolderContents,
 	extractEmbeddedImages,
 	extractTitleFromFilePath,
+	formatList,
 	getFileModifiedTime,
 	isBlogFolder,
 	isBookFolder,
+	isFileExplorerElement,
 	removeFrontMatter,
 	sanitizeFileName,
 	showConfirmationDialog
@@ -26,13 +28,13 @@ import {
 	addBlogIconToFile,
 	addBlogIconToFolder,
 	addFrontMatterToFile,
-	addLockIconToFile,
 	BlogMetadata,
+	decorateLockIcon,
 	evaluatePageSyncStatus,
 	extractMetadataFromBlogFrontMatter,
 	getBookIdFromMetadata,
+	getChangedPages,
 	getPureContent,
-	isNeedSync,
 	saveBlogToMarkdown,
 	savePagesToMarkdown,
 	tryExtractMetadataFromFrontMatter,
@@ -42,6 +44,8 @@ import {
 export default class WikiDocsPlugin extends Plugin {
 	settings: WikiDocsPluginSettings;
 	apiClient: ApiClient;
+	lockIconObserver: MutationObserver | null = null;
+	lockIconRefreshTimer: number | null = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -54,9 +58,12 @@ export default class WikiDocsPlugin extends Plugin {
             // 책 목록 가져오기 명령 실행
             const bookId = await this.promptForBookSelection();
             if (bookId) {
-				isSyncProcess = true;
-				await this.apiClient.downloadBook(this.app, bookId);
-				isSyncProcess = false;
+                isSyncProcess = true;
+                try {
+                    await this.apiClient.downloadBook(this.app, bookId);
+                } finally {
+                    isSyncProcess = false;
+                }
             }
         });
 
@@ -79,8 +86,11 @@ export default class WikiDocsPlugin extends Plugin {
 				const bookId = await this.promptForBookSelection();
 				if (bookId) {
 					isSyncProcess = true;
-					await this.apiClient.downloadBook(this.app, bookId);
-					isSyncProcess = false;
+					try {
+						await this.apiClient.downloadBook(this.app, bookId);
+					} finally {
+						isSyncProcess = false;
+					}
 				}
 			},
 		});
@@ -100,22 +110,33 @@ export default class WikiDocsPlugin extends Plugin {
 							item.setTitle("위키독스 내려받기")
 								.setIcon("cloud-download")
 								.onClick(async () => {
-									const is_need_sync = await isNeedSync(this.app, file)
-									if (is_need_sync) {
+									const changedPages = await getChangedPages(this.app, file)
+									if (changedPages.length > 0) {
+										const changedPaths = changedPages.map((page) =>
+											page.file.path.slice(file.path.length + 1)
+										);
 										const confirmed = await showConfirmationDialog(
 											"[주의!!] 변경된 페이지가 있습니다. \n" +
-											"변경된 페이지를 먼저 '위키독스 보내기'로 전송해 주세요.\n" +
+											"변경된 페이지를 먼저 '위키독스 보내기'로 전송해 주세요.\n\n" +
+											`변경된 페이지 (${changedPages.length}개)\n` +
+											formatList(changedPaths) + "\n\n" +
 											"무시하고 내려받으시겠습니까?"
 										);
 										if (confirmed) {
 											isSyncProcess = true;
-											await this.syncFromServer(file);
-											isSyncProcess = false;
+											try {
+												await this.syncFromServer(file);
+											} finally {
+												isSyncProcess = false;
+											}
 										}
 									}else {
 										isSyncProcess = true;
-										await this.syncFromServer(file);
-										isSyncProcess = false;
+										try {
+											await this.syncFromServer(file);
+										} finally {
+											isSyncProcess = false;
+										}
 									}
 								});
 						});
@@ -126,8 +147,11 @@ export default class WikiDocsPlugin extends Plugin {
 								.setIcon("cloud-upload")
 								.onClick(async () => {
 									isSyncProcess = true;
-									await this.syncToServer(file);
-									isSyncProcess = false;
+									try {
+										await this.syncToServer(file);
+									} finally {
+										isSyncProcess = false;
+									}
 								});
 						});
 					}
@@ -202,6 +226,7 @@ export default class WikiDocsPlugin extends Plugin {
 		
 		this.app.workspace.onLayoutReady(() => {
 			layout_ready = true;
+			this.setupLockIcons();
 		});
 		
 		this.registerEvent(
@@ -240,17 +265,15 @@ export default class WikiDocsPlugin extends Plugin {
 							metadata = await extractMetadataFromBlogFrontMatter(file);
 						}
 						
-						if (metadata && metadata.last_synced) {
-							const now = new Date();
-							const lastSyncedDate = new Date(metadata.last_synced);
-							const timeDifferenceInSeconds = Math.floor((now.getTime() - lastSyncedDate.getTime()) / 1000);
-							if (timeDifferenceInSeconds > 1) { // 파일 생성시간과 현재 시간이 1초 이상 차이날 경우 duplicate 파일임
-								metadata.id = -1; // 신규 파일로
-								metadata.last_synced = ''; // 동기화를 위해 비워둔다.
-								const frontMatter = metadata.getFrontMatter();
-								const updatedContent = frontMatter + getPureContent(content);
-								await this.app.vault.modify(file, updatedContent);
-							}
+						// 같은 폴더에 동일한 id를 가진 페이지가 이미 있으면 복제된(duplicate) 파일이다.
+						// last_synced 시각만으로 판단하면 다른 기기에서 동기화된 정상 파일의 id까지 -1로 지워진다.
+						if (metadata && metadata.id != null && Number(metadata.id) !== -1 &&
+								this.isDuplicatedPage(file, Number(metadata.id))) {
+							metadata.id = -1; // 신규 파일로
+							metadata.last_synced = ''; // 동기화를 위해 비워둔다.
+							const frontMatter = metadata.getFrontMatter();
+							const updatedContent = frontMatter + getPureContent(content);
+							await this.app.vault.modify(file, updatedContent);
 						}
 					}
 				}
@@ -286,13 +309,34 @@ export default class WikiDocsPlugin extends Plugin {
 			})
 		);
 
+		// 탐색기가 다시 그려지면(폴더 펼침/접힘, 레이아웃 변경 등) 그려진 항목을 맞춰준다.
 		this.registerEvent(
-			this.app.workspace.on("file-open", async (file) => {
-				if (file instanceof TFile) {
-					if (await isBookFolder(file)) {
-						addLockIconToFile(file);
-					}
+			this.app.workspace.on("layout-change", () => {
+				this.refreshLockIcons();
+			})
+		);
+
+		// 파일이 새로 생성되면(내려받기 등) 목록에 그려진 뒤 갱신한다.
+		// DOM 구조에 의존하지 않는 경로라, 관찰자가 동작하지 않는 환경에서도 아이콘이 표시된다.
+		this.registerEvent(
+			this.app.vault.on("create", (file) => {
+				if (file instanceof TFile && file.extension === "md") {
+					this.scheduleLockIconRefresh();
 				}
+			})
+		);
+
+		// open_yn이 바뀌면(내려받기, Front Matter 수정 등) 해당 항목의 아이콘만 갱신한다.
+		this.registerEvent(
+			this.app.metadataCache.on("changed", (file) => {
+				this.updateLockIcon(file);
+			})
+		);
+
+		// 캐시가 완전히 준비된 시점에는 그려진 항목 전체를 한 번 맞춰준다.
+		this.registerEvent(
+			this.app.metadataCache.on("resolved", () => {
+				this.refreshLockIcons();
 			})
 		);
 
@@ -301,6 +345,92 @@ export default class WikiDocsPlugin extends Plugin {
 	}
 
 	async onunload() {
+		this.lockIconObserver?.disconnect();
+		this.lockIconObserver = null;
+
+		if (this.lockIconRefreshTimer !== null) {
+			window.clearTimeout(this.lockIconRefreshTimer);
+			this.lockIconRefreshTimer = null;
+		}
+	}
+
+	// 파일 탐색기는 노드를 지연 렌더링하고, 폴더를 접었다 펴거나 레이아웃이 바뀔 때 다시 그린다.
+	// 따라서 "파일을 열 때"가 아니라 "항목이 그려질 때"마다 자물쇠 아이콘을 반영해야 한다.
+	setupLockIcons() {
+		if (this.lockIconObserver) {
+			return; // 이미 감시 중
+		}
+
+		this.lockIconObserver = new MutationObserver((mutations) => {
+			for (const mutation of mutations) {
+				mutation.addedNodes.forEach((node) => {
+					if (!(node instanceof HTMLElement) || !isFileExplorerElement(node)) {
+						return;
+					}
+
+					if (node.matches(".nav-file-title")) {
+						void decorateLockIcon(this.app, node);
+						return;
+					}
+
+					node.querySelectorAll<HTMLElement>(".nav-file-title").forEach((element) => {
+						void decorateLockIcon(this.app, element);
+					});
+				});
+			}
+		});
+
+		// 탐색기 컨테이너의 클래스명에 의존하지 않도록 문서 전체를 감시하고,
+		// 콜백에서 탐색기 영역에 추가된 노드만 처리한다.
+		this.lockIconObserver.observe(document.body, { childList: true, subtree: true });
+	}
+
+	// 파일이 여러 개 생성될 때(내려받기 등) 매번 갱신하지 않도록 모아서 한 번만 갱신한다.
+	scheduleLockIconRefresh() {
+		if (this.lockIconRefreshTimer !== null) {
+			window.clearTimeout(this.lockIconRefreshTimer);
+		}
+
+		this.lockIconRefreshTimer = window.setTimeout(() => {
+			this.lockIconRefreshTimer = null;
+			this.refreshLockIcons();
+		}, 200);
+	}
+
+	// 탐색기에 그려진 모든 항목의 자물쇠 아이콘을 상태에 맞춘다.
+	refreshLockIcons() {
+		document.querySelectorAll<HTMLElement>(".nav-file-title").forEach((element) => {
+			void decorateLockIcon(this.app, element);
+		});
+	}
+
+	// 특정 파일의 탐색기 항목만 갱신한다.
+	updateLockIcon(file: TFile) {
+		// 파일 경로에 따옴표나 역슬래시가 있어도 선택자가 깨지지 않도록 이스케이프한다.
+		const escapedPath = file.path.replace(/["\\]/g, "\\$&");
+		document
+			.querySelectorAll<HTMLElement>(`.nav-file-title[data-path="${escapedPath}"]`)
+			.forEach((element) => {
+				void decorateLockIcon(this.app, element);
+			});
+	}
+
+	// 같은 폴더 안에 동일한 id를 가진 다른 파일이 있으면 복제된(duplicate) 파일로 판단한다.
+	// (복제된 파일은 원본의 Front Matter를 그대로 물려받아 id가 중복된다)
+	isDuplicatedPage(file: TFile, pageId: number): boolean {
+		if (!file.parent) {
+			return false;
+		}
+
+		const folderPrefix = `${file.parent.path}/`;
+		return this.app.vault.getMarkdownFiles().some((other) => {
+			if (other.path === file.path || !other.path.startsWith(folderPrefix)) {
+				return false;
+			}
+
+			const frontMatter = this.app.metadataCache.getFileCache(other)?.frontmatter;
+			return frontMatter?.id != null && Number(frontMatter.id) === pageId;
+		});
 	}
 
 	async syncFromServer(folder: TFolder) {

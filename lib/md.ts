@@ -1,8 +1,9 @@
-import { App, TFile, TFolder } from "obsidian";
+import { App, Notice, TFile, TFolder } from "obsidian";
 
 import {
     ensureFolderExists,
     extractTitleFromFilePath,
+    getErrorMessage,
     getFileModifiedTime,
     readTopLevelMetadata,
     sanitizeFileName,
@@ -321,15 +322,22 @@ export async function savePagesToMarkdown(app:App, pages: any[], folderPath: str
             }
         } catch (error) {
             console.error(`Failed to save page: ${page.subject}`, error);
+            new Notice(`"${page.subject}" 페이지를 저장하지 못했습니다: ${getErrorMessage(error)}`);
         }
     }
 }
 
 
-export async function isNeedSync(app:App, folder:TFolder) {
-    const files = this.app.vault.getFiles().filter((file: { path: string; }) => file.path.startsWith(folder.path));
+export interface ChangedPage {
+    file: TFile;
+    reasons: string[];
+}
 
-    let changedCount = 0;
+// 서버로 보내야 할(로컬에서 변경된) 페이지 목록을 반환한다.
+export async function getChangedPages(app:App, folder:TFolder): Promise<ChangedPage[]> {
+    const files = app.vault.getFiles().filter((file: { path: string; }) => file.path.startsWith(folder.path));
+    const changedPages: ChangedPage[] = [];
+
     for (const file of files) {
         if (file.name === "metadata.md") {
             continue;
@@ -351,46 +359,65 @@ export async function isNeedSync(app:App, folder:TFolder) {
 
         const syncStatus = evaluatePageSyncStatus(file, metadata);
         if (syncStatus.needsSync) {
-            changedCount++;
+            changedPages.push({ file, reasons: syncStatus.reasons });
         }
     }
-    
-    if(changedCount > 0) {
-        return true;
-    }else {
-        return false;
-    }
+
+    return changedPages;
 }
 
 
-export async function addLockIconToFile(file: TFile) {
-    // 메타데이터 읽기
-    const metadata = this.app.metadataCache.getFileCache(file);
-    if (metadata?.frontmatter?.open_yn === "N") {
-        // 파일 탐색기에서 해당 파일에 자물쇠 아이콘 추가
-        const explorerLeaf = document.querySelector(
-            `.nav-file-title[data-path="${file.path}"]`
-        );
-        if (explorerLeaf) {
-            // 이미 아이콘이 추가된 경우 중복 추가 방지
-            const existingIcon = explorerLeaf.querySelector(".lock-icon");
-            if (!existingIcon) {
-                const lockIcon = document.createElement("span");
-                lockIcon.className = "lock-icon";
-                explorerLeaf.appendChild(lockIcon);
-            }
+export async function isNeedSync(app:App, folder:TFolder) {
+    return (await getChangedPages(app, folder)).length > 0;
+}
+
+
+// open_yn 값을 반환한다. 메타데이터 캐시가 아직 없는 파일은(내려받기 직후 등) 본문에서 직접 읽는다.
+// 파일 탐색기 노드는 색인보다 먼저 그려지므로, 캐시를 기다리면 아이콘 표시가 늦어진다.
+async function readOpenYn(app: App, file: TFile): Promise<string | null> {
+    try {
+        const cache = app.metadataCache.getFileCache(file);
+        if (cache) {
+            return cache.frontmatter?.open_yn ?? null;
         }
-    } else {
+
+        const content = await app.vault.cachedRead(file);
+        const frontMatter = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+        if (!frontMatter) {
+            return null;
+        }
+
+        const openYn = frontMatter[1].match(/^open_yn:[ \t]*(.*)$/m);
+        return openYn ? openYn[1].trim().replace(/^["']|["']$/g, "") : null;
+    } catch (error) {
+        // 파일이 그 사이 삭제/이동된 경우 등
+        console.error(`Failed to read open_yn: ${file.path}`, error);
+        return null;
+    }
+}
+
+// 파일 탐색기 항목(.nav-file-title)에 공개/비공개 상태(open_yn)를 자물쇠 아이콘으로 반영한다.
+export async function decorateLockIcon(app: App, element: HTMLElement) {
+    const path = element.getAttribute("data-path");
+    if (!path) {
+        return;
+    }
+
+    const file = app.vault.getAbstractFileByPath(path);
+    // Front Matter를 가질 수 있는 md 파일만 대상으로 한다 (이미지 등은 캐시 조회도 하지 않는다).
+    const openYn = file instanceof TFile && file.extension === "md"
+        ? await readOpenYn(app, file)
+        : null;
+
+    const existingIcon = element.querySelector(".lock-icon");
+    if (openYn === "N") {
+        // 이미 아이콘이 추가된 경우 중복 추가 방지
+        if (!existingIcon) {
+            element.createSpan({ cls: "lock-icon" });
+        }
+    } else if (existingIcon) {
         // open_yn이 "Y" 또는 없는 경우 아이콘 제거
-        const explorerLeaf = document.querySelector(
-            `.nav-file-title[data-path="${file.path}"]`
-        );
-        if (explorerLeaf) {
-            const existingIcon = explorerLeaf.querySelector(".lock-icon");
-            if (existingIcon) {
-                existingIcon.remove();
-            }
-        }
+        existingIcon.remove();
     }
 }
 
@@ -539,6 +566,7 @@ export async function saveBlogToMarkdown(app:App, blog: any, folderPath: string)
 
     } catch (error) {
         console.error(`Failed to save blog: ${blog.title}`, error);
+        new Notice(`"${blog.title}" 블로그를 저장하지 못했습니다: ${getErrorMessage(error)}`);
     }
     
 }
